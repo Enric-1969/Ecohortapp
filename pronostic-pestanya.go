@@ -46,7 +46,7 @@ func (app *Config) obtenirGrafic() *canvas.Image {
 	})
 
 	//Determinem com la imatge omplira el canvas
-	img.FillMode = canvas.ImageFillOriginal
+	//img.FillMode = canvas.ImageFillOriginal
 
 	//Retornem la imatge
 	return img

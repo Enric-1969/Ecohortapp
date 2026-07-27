@@ -50,7 +50,7 @@ func (app *Config) getRegistresTable() *widget.Table {
 					dialog.ShowConfirm("Borrar?", "", func(deleted bool) {
 						if deleted {
 							id, _ := strconv.Atoi(app.Registres[i.Row][0].(string)) //Transformem el identificador a decimal sencer
-							err := app.DB.BorrarRegistre(int64(id))        //Invoquem el metode per borrar a partir d'un id
+							err := app.DB.BorrarRegistre(int64(id))                 //Invoquem el metode per borrar a partir d'un id
 							//Capturem possibles errors
 							if err != nil {
 								app.ErrorLog.Println(err)
@@ -76,7 +76,7 @@ func (app *Config) getRegistresTable() *widget.Table {
 		})
 
 	//Establim el ample de les diferents celdes
-	colWidths := []float32{50, 100, 100, 100, 100, 100, 110}
+	colWidths := []float32{110, 110, 110, 110, 110, 110, 110}
 	//Executem una estructura for per aplicar cada un de els amples amb el metode SetColumnWidth
 	for i := 0; i < len(colWidths); i++ {
 		t.SetColumnWidth(i, colWidths[i])
