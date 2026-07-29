@@ -1,0 +1,14 @@
+# Archivo de variables de entorno (claves secretas)
+.env
+
+# Ejecutables de Go y compilados
+*.exe
+*.exe.
+*.dll
+*.so
+*.dylib
+ecohortapp
+
+# Archivos del sistema
+.DS_Store
+Thumbs.db
