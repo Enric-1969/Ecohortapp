@@ -13,7 +13,7 @@ import (
 )
 
 var municipi = "08001" //Definim el municipi per la consulta dels valors climatologics
-// var apiKey = "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJvZGlnaW9jaW9AZ21haWwuY29tIiwianRpIjoiYjRlZTViMjctZDhhMS00YmIxLWFiZjgtYmFjYTViOTc5ZDhjIiwiaXNzIjoiQUVNRVQiLCJpYXQiOjE2NzU2MTY3OTIsInVzZXJJZCI6ImI0ZWU1YjI3LWQ4YTEtNGJiMS1hYmY4LWJhY2E1Yjk3OWQ4YyIsInJvbGUiOiIifQ.y-WKC8DkAJ4O__aNkvWS60AwmYl6dVHcBZKcowfmNKs"
+
 var apiKey string
 
 func init() {
@@ -21,6 +21,7 @@ func init() {
 	if err != nil {
 		log.Println("Aviso: No se pudo cargar el archivo .env")
 	}
+	// Cargar la API key únicamente desde la variable de entorno
 	apiKey = os.Getenv("AEMET_API_KEY")
 }
 
