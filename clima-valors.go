@@ -152,7 +152,14 @@ func GetPreUrl() (string, error) {
 		return "", err
 	}
 
-	return preUrl.Url, err //Retornem els valors
+	// Comprovem si l'AEMET ens ha retornat realment la URL de dades
+	if preUrl.Url == "" {
+		errAemet := fmt.Errorf("AEMET no ha retornat URL. Resposta rebuda: %s", string(body))
+		log.Println(errAemet)
+		return "", errAemet
+	}
+
+	return preUrl.Url, nil //Retornem els valors
 }
 
 func GetPrediccio(url string) (*Diaria, error) {
