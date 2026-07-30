@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
@@ -54,6 +55,11 @@ func main() {
 
 	//crearem un repositori de base de dades
 	myApp.setupDB(sqlDB)
+
+	// INICIALIZAR EL CLIENTE HTTP CON TIMEOUT
+	myApp.HTTPClient = http.Client{
+		Timeout: 15 * time.Second,
+	}
 
 	//Definim la capacitat de que l'usuari modifiqui el municipi i la apiKey
 	myApp.municipi = fyneApp.Preferences().StringWithFallback("municipi", "08001")
