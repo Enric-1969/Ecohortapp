@@ -56,8 +56,15 @@ func main() {
 	myApp.setupDB(sqlDB)
 
 	//Definim la capacitat de que l'usuari modifiqui el municipi i la apiKey
-	municipi = fyneApp.Preferences().StringWithFallback("municipi", "08001")
-	apiKey = fyneApp.Preferences().StringWithFallback("apiKey", "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJvZGlnaW9jaW9AZ21haWwuY29tIiwianRpIjoiYjRlZTViMjctZDhhMS00YmIxLWFiZjgtYmFjYTViOTc5ZDhjIiwiaXNzIjoiQUVNRVQiLCJpYXQiOjE2NzU2MTY3OTIsInVzZXJJZCI6ImI0ZWU1YjI3LWQ4YTEtNGJiMS1hYmY4LWJhY2E1Yjk3OWQ4YyIsInJvbGUiOiIifQ.y-WKC8DkAJ4O__aNkvWS60AwmYl6dVHcBZKcowfmNKs")
+	myApp.municipi = fyneApp.Preferences().StringWithFallback("municipi", "08001")
+
+	//Definim la apiKey
+	//os.Getenv("AEMET_API_KEY"):
+	//En lugar de dejar un texto fijo con la clave antigua dentro del código Go, le decimos a Fyne:
+	//"Si el usuario no tiene guardada una clave en sus preferencias, usa como valor por defecto la
+	//clave que guardamos en el archivo .env".
+
+	myApp.apiKey = fyneApp.Preferences().StringWithFallback("apiKey", os.Getenv("AEMET_API_KEY"))
 
 	//crearem i definim el tamany de una pantalla de fyne
 	myApp.MainWindow = fyneApp.NewWindow("Eco Hort App")
