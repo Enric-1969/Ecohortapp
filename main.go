@@ -38,6 +38,14 @@ type Config struct {
 	apiKey                             string                //Afegim la referencia a aquest valor de configuració
 }
 
+// Estructura per descodificar la primera resposta JSON de la API d'AEMET
+type AemetRespuestaAPI struct {
+	Descripcion string `json:"descripcion"`
+	Estado      int    `json:"estado"`
+	Datos       string `json:"datos"`
+	Metadatos   string `json:"metadatos"`
+}
+
 func main() {
 	var myApp Config //Creem una variable que sigui de tipus Config i aixi enmagatzemar la configuració de l'App
 

@@ -14,7 +14,8 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
-func (app *Config) getToolBar(win fyne.Window) *widget.Toolbar {
+// Usamos '_' para indicar que el parámetro win no se usa explícitamente dentro de la función
+func (app *Config) getToolBar(_ fyne.Window) *widget.Toolbar {
 	toolBar := widget.NewToolbar(
 		widget.NewToolbarSpacer(), //Crearem un espaciador que empenyi els diferents items cap a la dreta
 		widget.NewToolbarAction(theme.DocumentCreateIcon(), func() {
@@ -97,7 +98,9 @@ func (app *Config) addRegistresDialog() dialog.Dialog {
 	app.AfegirRegistresDataRegistreEntrada = dataRegistreEntrada
 	app.AfegirRegistresPrecipitacioEntrada = precipitacioEntrada
 	app.AfegirRegistresTempMaximaEntrada = tempMaximaEntrada
-	app.AfegirRegistresTempMaximaEntrada = tempMinimaEntrada
+	// CORREGIDO: antes decía TempMaximaEntrada
+	app.AfegirRegistresTempMinimaEntrada = tempMinimaEntrada
+	app.AfegirRegistresHumitatEntrada = humitatEntrada
 	app.AfegirRegistresHumitatEntrada = humitatEntrada
 
 	validacioData := func(s string) error {
