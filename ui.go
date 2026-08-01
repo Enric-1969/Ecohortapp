@@ -45,14 +45,14 @@ func (app *Config) makeUI() {
 
 	//Realitzem una funcio anonima que sera invocada per una GoRutine en segon pla
 	go func() {
-		for range time.Tick(time.Second * 30) {
-			app.actualitzarClimaDadesContent() //Invoquem la funcio de refrescar els preus
+		for range time.Tick(time.Minute * 2) {
+			app.actualitzarClimaDadesContent() //Invoquem la funcio de refrescar les dades meterologiques
 		}
 	}()
 }
 
 func (app *Config) actualitzarClimaDadesContent() {
-	app.InfoLog.Print("refrescant els preus") //Realitzem un log per tenir constancia que s'esta executant la gorutine
+	app.InfoLog.Print("actualitzar les dades meterologiques") //Realitzem un log per tenir constancia que s'esta executant la gorutine
 	precipitacio, tempMax, tempMin, humitat := app.getClimaText()
 	app.ClimaDadesContainer.Objects = []fyne.CanvasObject{precipitacio, tempMax, tempMin, humitat}
 	app.ClimaDadesContainer.Refresh()

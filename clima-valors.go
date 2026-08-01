@@ -3,7 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -138,8 +138,8 @@ func GetPreUrl() (string, error) {
 		return "", err //Retornem un error controlat
 	}
 
-	defer res.Body.Close()                //Diferim la resposta
-	body, err := ioutil.ReadAll(res.Body) //Llegim el cos de la resposta de la peticio
+	defer res.Body.Close()            //Diferim la resposta
+	body, err := io.ReadAll(res.Body) //Llegim el cos de la resposta de la peticio
 	if err != nil {
 		log.Println("error llegint el json", err)
 		return "", err //Retornem un error controlat
@@ -177,8 +177,8 @@ func GetPrediccio(url string) (*Diaria, error) {
 		return nil, err //Retornem un error controlat
 	}
 
-	defer res.Body.Close()                //Diferim la resposta
-	body, err := ioutil.ReadAll(res.Body) //Llegim el cos de la resposta de la peticio
+	defer res.Body.Close()            //Diferim la resposta
+	body, err := io.ReadAll(res.Body) //Llegim el cos de la resposta de la peticio
 	if err != nil {
 		log.Println("error llegint el json", err)
 		return nil, err //Retornem un error controlat
