@@ -9,6 +9,8 @@
 *.dylib
 ecohortapp
 
+pronostic.png
+
 # Archivos del sistema
 .DS_Store
 Thumbs.db
