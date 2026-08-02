@@ -36,6 +36,7 @@ type Config struct {
 	AfegirRegistresHumitatEntrada      *widget.Entry         //Afegim la referencia a la entrada del valor humitat per a nous registres que guardem en la bd
 	municipi                           string                //Afegim la referencia a aquest valor de configuració
 	apiKey                             string                //Afegim la referencia a aquest valor de configuració
+	UserConfig                         UserConfig
 }
 
 // Estructura per descodificar la primera resposta JSON de la API d'AEMET
@@ -48,6 +49,19 @@ type AemetRespuestaAPI struct {
 
 func main() {
 	var myApp Config //Creem una variable que sigui de tipus Config i aixi enmagatzemar la configuració de l'App
+
+	// 1. Cargar la configuración del usuario
+	userCfg, err := LoadConfig()
+	if err != nil {
+		// Si el archivo config.json no existe todavía, establecemos valores por defecto
+		log.Println("No se encontró config.json, usando configuración por defecto:", err)
+		userCfg = UserConfig{
+			MunicipioCodigo: "08001", // Código por defecto (ej. Abrera/Barcelona)
+			Municipios:      []string{"08001"},
+		}
+	} else {
+		log.Println("Configuración cargada con éxito:", userCfg)
+	}
 
 	// crearem una aplicació fyne
 	fyneApp := app.NewWithID("cat.cibernarium.ecohortapp") //El definit el mètode New amb una id ens permet distribuir la nostre app en un MarketPlace
@@ -72,8 +86,11 @@ func main() {
 		Timeout: 15 * time.Second,
 	}
 
+	// Asignar la configuración guardada a la app (Sustituye a Preferences)
+	myApp.UserConfig = userCfg
+	myApp.municipi = userCfg.MunicipioCodigo
 	//Definim la capacitat de que l'usuari modifiqui el municipi i la apiKey
-	myApp.municipi = fyneApp.Preferences().StringWithFallback("municipi", "08001")
+	//myApp.municipi = fyneApp.Preferences().StringWithFallback("municipi", "08001")
 
 	//Definim la apiKey
 	//os.Getenv("AEMET_API_KEY"):
