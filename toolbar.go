@@ -2,8 +2,6 @@ package main
 
 import (
 	"ecohortapp/repository"
-	"fmt"
-	"reflect"
 	"strconv"
 	"time"
 
@@ -39,49 +37,38 @@ func (app *Config) getToolBar(_ fyne.Window) *widget.Toolbar {
 }
 
 func (app *Config) mostrarPreferencies() dialog.Dialog {
-	//win := app.App.NewWindow("Ajustos")
-
-	//Definim les variables a on guardarem el resultat del mètode d'entrada
+	// 1. Entrada para el código de municipio (ya la tenías)
 	dadaMunicipi := widget.NewEntry()
-	dadaApiKey := widget.NewEntry()
 	dadaMunicipi.Text = municipi
-	dadaApiKey.Text = apiKey
-	esStringValidador := func(s string) error {
-		_, err := fmt.Print(reflect.TypeOf(s))
-		if err != nil {
-			return err
-		}
-		return nil
-	}
-	dadaMunicipi.Validator = esStringValidador
-	dadaApiKey.Validator = esStringValidador
 
-	fmt.Println(dadaMunicipi.Text)
-	//Crearem el dialeg creant un formulari
+	// 2. Nueva lista desplegable para el Nombre del municipio
+	opcionesNombres := []string{"Abrera", "Barcelona", "Martorell"}
+	dadaNom := widget.NewSelect(opcionesNombres, func(seleccionado string) {
+		// En el Micro-Paso 2 añadiremos la sincronización aquí
+	})
+	dadaNom.SetSelected("Abrera") // Selección por defecto
+
+	// 3. Formularios con los dos campos: Nombre y Código (sin API Key)
 	addForm := dialog.NewForm(
 		"Configurar ajustaments",
 		"Guardar",
 		"Cancelar",
-		//Afegirem les etiquetes en forma de item per el formulari
 		[]*widget.FormItem{
+			{Text: "Nom Municipi", Widget: dadaNom},
 			{Text: "Codi Municipi", Widget: dadaMunicipi},
-			{Text: "Api Key", Widget: dadaApiKey},
 		},
-		//A continuació realitzem la validació de les dades
 		func(valid bool) {
 			if valid {
+				// Guardamos el código de municipio en las preferencias
 				municipi = dadaMunicipi.Text
-				apiKey = dadaApiKey.Text
-				fmt.Println(dadaMunicipi.SelectedText())
-				//Desenvolupar un filtratge, convertint les dades a els formats de la bd
 				app.App.Preferences().SetString("municipi", dadaMunicipi.Text)
-				app.App.Preferences().SetString("apiKey", dadaApiKey.Text)
 
-				//Invoquem el paremetre del struct Config per permetre que refresqui el widget de la taula amb el nou registre
+				// Refrescamos los datos de la interfaz
 				app.actualitzarClimaDadesContent()
 			}
 		},
-		app.MainWindow)
+		app.MainWindow,
+	)
 
 	return addForm
 }
