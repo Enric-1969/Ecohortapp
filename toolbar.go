@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"fyne.io/fyne/v2"
-	_ "fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
@@ -36,8 +36,11 @@ func (app *Config) getToolBar(_ fyne.Window) *widget.Toolbar {
 	return toolBar
 }
 
-func (app *Config) mostrarPreferencies() dialog.Dialog {
-	// Diccionarios simples en RAM para la búsqueda inmediata
+// =============================================================================
+// FUNCIÓ AUXILIAR: PESTANYA 1 (PER MUNICIPI)
+// =============================================================================
+
+func (app *Config) buildPestanyaMunicipi() (fyne.CanvasObject, func() string) {
 	codigosANombres := map[string]string{
 		"08001": "Abrera",
 		"08019": "Barcelona",
@@ -50,23 +53,18 @@ func (app *Config) mostrarPreferencies() dialog.Dialog {
 		"Martorell": "08121",
 	}
 
-	// 1. Campo de texto para el código
 	dadaMunicipi := widget.NewEntry()
 	dadaMunicipi.Text = municipi
 
-	// 2. Lista desplegable para el nombre
-	opcionesNombres := []string{"Abrera", "Barcelona", "Martorell"}
-	dadaNom := widget.NewSelect(opcionesNombres, nil)
+	opcionsNoms := []string{"Abrera", "Barcelona", "Martorell"}
+	dadaNom := widget.NewSelect(opcionsNoms, nil)
 
-	// Seleccionamos en el desplegable el nombre correspondiente al código actual
 	if nomInicial, existe := codigosANombres[dadaMunicipi.Text]; existe {
 		dadaNom.SetSelected(nomInicial)
 	}
 
-	// Variable de control (flag) para evitar bucles infinitos
 	var sincronitzant bool = false
 
-	// Evento 1: Si el usuario cambia el NOMBRE -> Actualiza el CÓDIGO
 	dadaNom.OnChanged = func(nomSeleccionat string) {
 		if sincronitzant {
 			return
@@ -78,7 +76,6 @@ func (app *Config) mostrarPreferencies() dialog.Dialog {
 		sincronitzant = false
 	}
 
-	// Evento 2: Si el usuario cambia el CÓDIGO -> Actualiza el NOMBRE
 	dadaMunicipi.OnChanged = func(codiEscrit string) {
 		if sincronitzant {
 			return
@@ -90,26 +87,171 @@ func (app *Config) mostrarPreferencies() dialog.Dialog {
 		sincronitzant = false
 	}
 
-	// 3. Crear el formulario con los eventos vinculados
-	addForm := dialog.NewForm(
+	vista := container.NewVBox(
+		widget.NewLabel("Selecciona el municipi per Nom o Codi INE/AEMET:"),
+		widget.NewForm(
+			widget.NewFormItem("Nom Municipi:", dadaNom),
+			widget.NewFormItem("Codi Municipi:", dadaMunicipi),
+		),
+	)
+
+	// Retornem la vista UI i una funció getter per al codi final
+	return vista, func() string {
+		return dadaMunicipi.Text
+	}
+}
+
+// =============================================================================
+// FUNCIÓ AUXILIAR: PESTANYA 2 (MODE PRO)
+// =============================================================================
+
+func (app *Config) buildPestanyaModePro() (fyne.CanvasObject, func()) {
+	var checkTodaEspana, checkCatalunya, checkBarcelona, checkGirona, checkMadridCCAA, checkMadridProv *widget.Check
+	var actualitzantCascada bool = false
+
+	checkBarcelona = widget.NewCheck("    - Barcelona (Tots els municipis)", func(marcat bool) {
+		if actualitzantCascada {
+			return
+		}
+		actualitzantCascada = true
+		if !marcat {
+			checkCatalunya.SetChecked(false)
+			checkTodaEspana.SetChecked(false)
+		}
+		actualitzantCascada = false
+	})
+
+	checkGirona = widget.NewCheck("    - Girona (Tots els municipis)", func(marcat bool) {
+		if actualitzantCascada {
+			return
+		}
+		actualitzantCascada = true
+		if !marcat {
+			checkCatalunya.SetChecked(false)
+			checkTodaEspana.SetChecked(false)
+		}
+		actualitzantCascada = false
+	})
+
+	checkCatalunya = widget.NewCheck("  Catalunya", func(marcat bool) {
+		if actualitzantCascada {
+			return
+		}
+		actualitzantCascada = true
+		checkBarcelona.SetChecked(marcat)
+		checkGirona.SetChecked(marcat)
+		if !marcat {
+			checkTodaEspana.SetChecked(false)
+		}
+		actualitzantCascada = false
+	})
+
+	checkMadridProv = widget.NewCheck("    - Madrid (Tots els municipis)", func(marcat bool) {
+		if actualitzantCascada {
+			return
+		}
+		actualitzantCascada = true
+		if !marcat {
+			checkMadridCCAA.SetChecked(false)
+			checkTodaEspana.SetChecked(false)
+		}
+		actualitzantCascada = false
+	})
+
+	checkMadridCCAA = widget.NewCheck("  Comunidad de Madrid", func(marcat bool) {
+		if actualitzantCascada {
+			return
+		}
+		actualitzantCascada = true
+		checkMadridProv.SetChecked(marcat)
+		if !marcat {
+			checkTodaEspana.SetChecked(false)
+		}
+		actualitzantCascada = false
+	})
+
+	checkTodaEspana = widget.NewCheck("Seleccionar tota Espanya", func(marcat bool) {
+		if actualitzantCascada {
+			return
+		}
+		actualitzantCascada = true
+		checkCatalunya.SetChecked(marcat)
+		checkBarcelona.SetChecked(marcat)
+		checkGirona.SetChecked(marcat)
+		checkMadridCCAA.SetChecked(marcat)
+		checkMadridProv.SetChecked(marcat)
+		actualitzantCascada = false
+	})
+
+	// Càrrega d'estat inicial
+	actualitzantCascada = true
+	checkTodaEspana.SetChecked(app.App.Preferences().BoolWithFallback("pro_tota_espanya", false))
+	checkCatalunya.SetChecked(app.App.Preferences().BoolWithFallback("pro_catalunya", false))
+	checkBarcelona.SetChecked(app.App.Preferences().BoolWithFallback("pro_barcelona", false))
+	checkGirona.SetChecked(app.App.Preferences().BoolWithFallback("pro_girona", false))
+	checkMadridCCAA.SetChecked(app.App.Preferences().BoolWithFallback("pro_madrid_ccaa", false))
+	checkMadridProv.SetChecked(app.App.Preferences().BoolWithFallback("pro_madrid_prov", false))
+	actualitzantCascada = false
+
+	arbreContengut := container.NewVBox(
+		checkTodaEspana,
+		widget.NewSeparator(),
+		checkCatalunya,
+		checkBarcelona,
+		checkGirona,
+		widget.NewSeparator(),
+		checkMadridCCAA,
+		checkMadridProv,
+	)
+
+	scrollArbre := container.NewVScroll(arbreContengut)
+	scrollArbre.SetMinSize(fyne.NewSize(320, 140))
+
+	vista := container.NewVBox(
+		widget.NewLabel("Filtre Jeràrquic (Autonomies / Províncies / Municipis):"),
+		scrollArbre,
+	)
+
+	// Retornem la vista UI i una funció de desat per al callback de Guardar
+	guardarPreferenciesPro := func() {
+		app.App.Preferences().SetBool("pro_tota_espanya", checkTodaEspana.Checked)
+		app.App.Preferences().SetBool("pro_catalunya", checkCatalunya.Checked)
+		app.App.Preferences().SetBool("pro_barcelona", checkBarcelona.Checked)
+		app.App.Preferences().SetBool("pro_girona", checkGirona.Checked)
+		app.App.Preferences().SetBool("pro_madrid_ccaa", checkMadridCCAA.Checked)
+		app.App.Preferences().SetBool("pro_madrid_prov", checkMadridProv.Checked)
+	}
+
+	return vista, guardarPreferenciesPro
+}
+
+// =============================================================================
+// FUNCIÓ PRINCIPAL / DIÀLEG D'AJUSTAMENTS
+// =============================================================================
+func (app *Config) mostrarPreferencies() dialog.Dialog {
+	vistaMunicipi, getCodiMunicipi := app.buildPestanyaMunicipi()
+	vistaModePro, guardarPreferenciesPro := app.buildPestanyaModePro()
+
+	pestanyes := container.NewAppTabs(
+		container.NewTabItem("Per Municipi", vistaMunicipi),
+		container.NewTabItem("Mode PRO", vistaModePro),
+	)
+
+	return dialog.NewCustomConfirm(
 		"Configurar ajustaments",
 		"Guardar",
 		"Cancelar",
-		[]*widget.FormItem{
-			{Text: "Nom Municipi", Widget: dadaNom},
-			{Text: "Codi Municipi", Widget: dadaMunicipi},
-		},
+		pestanyes,
 		func(valid bool) {
 			if valid {
-				municipi = dadaMunicipi.Text
-				app.App.Preferences().SetString("municipi", dadaMunicipi.Text)
+				municipi = getCodiMunicipi()
+				app.App.Preferences().SetString("municipi", municipi)
+				guardarPreferenciesPro()
 				app.actualitzarClimaDadesContent()
 			}
 		},
 		app.MainWindow,
 	)
-
-	return addForm
 }
 
 // Funció per afegir Registres a on referenciem el struct Config
