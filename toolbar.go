@@ -37,18 +37,60 @@ func (app *Config) getToolBar(_ fyne.Window) *widget.Toolbar {
 }
 
 func (app *Config) mostrarPreferencies() dialog.Dialog {
-	// 1. Entrada para el código de municipio (ya la tenías)
+	// Diccionarios simples en RAM para la búsqueda inmediata
+	codigosANombres := map[string]string{
+		"08001": "Abrera",
+		"08019": "Barcelona",
+		"08121": "Martorell",
+	}
+
+	nombresACodigos := map[string]string{
+		"Abrera":    "08001",
+		"Barcelona": "08019",
+		"Martorell": "08121",
+	}
+
+	// 1. Campo de texto para el código
 	dadaMunicipi := widget.NewEntry()
 	dadaMunicipi.Text = municipi
 
-	// 2. Nueva lista desplegable para el Nombre del municipio
+	// 2. Lista desplegable para el nombre
 	opcionesNombres := []string{"Abrera", "Barcelona", "Martorell"}
-	dadaNom := widget.NewSelect(opcionesNombres, func(seleccionado string) {
-		// En el Micro-Paso 2 añadiremos la sincronización aquí
-	})
-	dadaNom.SetSelected("Abrera") // Selección por defecto
+	dadaNom := widget.NewSelect(opcionesNombres, nil)
 
-	// 3. Formularios con los dos campos: Nombre y Código (sin API Key)
+	// Seleccionamos en el desplegable el nombre correspondiente al código actual
+	if nomInicial, existe := codigosANombres[dadaMunicipi.Text]; existe {
+		dadaNom.SetSelected(nomInicial)
+	}
+
+	// Variable de control (flag) para evitar bucles infinitos
+	var sincronitzant bool = false
+
+	// Evento 1: Si el usuario cambia el NOMBRE -> Actualiza el CÓDIGO
+	dadaNom.OnChanged = func(nomSeleccionat string) {
+		if sincronitzant {
+			return
+		}
+		sincronitzant = true
+		if codi, existe := nombresACodigos[nomSeleccionat]; existe {
+			dadaMunicipi.SetText(codi)
+		}
+		sincronitzant = false
+	}
+
+	// Evento 2: Si el usuario cambia el CÓDIGO -> Actualiza el NOMBRE
+	dadaMunicipi.OnChanged = func(codiEscrit string) {
+		if sincronitzant {
+			return
+		}
+		sincronitzant = true
+		if nom, existe := codigosANombres[codiEscrit]; existe {
+			dadaNom.SetSelected(nom)
+		}
+		sincronitzant = false
+	}
+
+	// 3. Crear el formulario con los eventos vinculados
 	addForm := dialog.NewForm(
 		"Configurar ajustaments",
 		"Guardar",
@@ -59,11 +101,8 @@ func (app *Config) mostrarPreferencies() dialog.Dialog {
 		},
 		func(valid bool) {
 			if valid {
-				// Guardamos el código de municipio en las preferencias
 				municipi = dadaMunicipi.Text
 				app.App.Preferences().SetString("municipi", dadaMunicipi.Text)
-
-				// Refrescamos los datos de la interfaz
 				app.actualitzarClimaDadesContent()
 			}
 		},
