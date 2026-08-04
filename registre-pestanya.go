@@ -1,132 +1,138 @@
 package main
 
 import (
-	"ecohortapp/repository"
 	"fmt"
-	"strconv"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
-	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 )
 
-// Realitzem una funció que retornara un contenidor de Fyne amb el contingut
+// registresTab genera la pestanya de registres (coincideix amb la crida de ui.go)
 func (app *Config) registresTab() *fyne.Container {
-	//Invoquem la funcio anterior per carregar l'estructura de dedes amb la interficie de slice de slices
-	app.Registres = app.getRegistresSlice()
-	//També invoquem el mètode getRegistresTable() i l'asignem al item RegistresTable del struct
-	app.RegistresTable = app.getRegistresTable()
-	//Creem un contenidor amb una capça vertical i a on situem el widget que em general de la taula Registres
-	registresContainer := container.NewBorder(
-		nil,
-		nil,
-		nil,
-		nil,
-		//definirem un contenidor que ens permetra realizar graelles adaptatives i que indicarem amb dos parametres: el nombre de files/columnas i l’objecte que situarem.
-		container.NewAdaptiveGrid(1, app.RegistresTable),
-	)
+	tabla := app.getRegistresTable()
 
-	return registresContainer
-}
+	dataEntrada := widget.NewEntry()
+	dataEntrada.SetPlaceHolder("AAAA-MM-DD")
 
-// Realitzem una funcio adicional que ens retornara el punter a la widget en forma de taula i a on situarem les dades
-func (app *Config) getRegistresTable() *widget.Table {
-	//Definim l'estructura del widget per crear una nova taula amb fyne
-	t := widget.NewTable(
-		func() (int, int) {
-			return len(app.Registres), len(app.Registres[0])
+	precipitacioEntrada := widget.NewEntry()
+	precipitacioEntrada.SetPlaceHolder("0")
+
+	tempMaxEntrada := widget.NewEntry()
+	tempMaxEntrada.SetPlaceHolder("0")
+
+	tempMinEntrada := widget.NewEntry()
+	tempMinEntrada.SetPlaceHolder("0")
+
+	humitatEntrada := widget.NewEntry()
+	humitatEntrada.SetPlaceHolder("0")
+
+	app.AfegirRegistresDataRegistreEntrada = dataEntrada
+	app.AfegirRegistresPrecipitacioEntrada = precipitacioEntrada
+	app.AfegirRegistresTempMaximaEntrada = tempMaxEntrada
+	app.AfegirRegistresTempMinimaEntrada = tempMinEntrada
+	app.AfegirRegistresHumitatEntrada = humitatEntrada
+
+	form := &widget.Form{
+		Items: []*widget.FormItem{
+			{Text: "Data Registre", Widget: dataEntrada},
+			{Text: "Precipitació (%)", Widget: precipitacioEntrada},
+			{Text: "Temp. Màxima (°C)", Widget: tempMaxEntrada},
+			{Text: "Temp. Mínima (°C)", Widget: tempMinEntrada},
+			{Text: "Humitat (%)", Widget: humitatEntrada},
 		},
-		func() fyne.CanvasObject {
-			ctr := container.NewVBox(widget.NewLabel(""))
-			return ctr
-		},
-		func(i widget.TableCellID, o fyne.CanvasObject) {
-			if i.Col == (len(app.Registres[0])-1) && i.Row != 0 {
-				//Ultima cel.la - situa un botò
-				w := widget.NewButtonWithIcon("Borrar", theme.DeleteIcon(), func() {
-					//Presentem un dialeg de confirmació
-					dialog.ShowConfirm("Borrar?", "", func(deleted bool) {
-						if deleted {
-							id, _ := strconv.Atoi(app.Registres[i.Row][0].(string)) //Transformem el identificador a decimal sencer
-							err := app.DB.BorrarRegistre(int64(id))                 //Invoquem el metode per borrar a partir d'un id
-							//Capturem possibles errors
-							if err != nil {
-								app.ErrorLog.Println(err)
-							}
-						}
-						//Forcem el refresc de la taula
-						app.actualitzarRegistresTable()
-					}, app.MainWindow)
-				})
-				//Creem un widget d'alta importancia per mostrar un missatge destacat
-				w.Importance = widget.HighImportance
-
-				//Definim el contenidor a on situarem el objecte corresponent a el boto.
-				o.(*fyne.Container).Objects = []fyne.CanvasObject{
-					w,
-				}
-			} else {
-				//situarem la informació rebuda en el slice, recordem que primer gestiona la fila i després la columna
-				o.(*fyne.Container).Objects = []fyne.CanvasObject{
-					widget.NewLabel(app.Registres[i.Row][i.Col].(string)),
-				}
+		OnSubmit: func() {
+			err := app.guardarRegistre()
+			if err != nil {
+				dialog.ShowError(err, app.MainWindow)
+				return
 			}
-		})
-
-	//Establim el ample de les diferents celdes
-	colWidths := []float32{110, 110, 110, 110, 110, 110, 110}
-	//Executem una estructura for per aplicar cada un de els amples amb el metode SetColumnWidth
-	for i := 0; i < len(colWidths); i++ {
-		t.SetColumnWidth(i, colWidths[i])
+			dialog.ShowInformation("Èxit", "Registre afegit correctament", app.MainWindow)
+			app.netejarFormulari()
+			app.refreshRegistresTable()
+		},
 	}
 
-	return t
+	formContainer := container.NewVBox(
+		widget.NewLabelWithStyle("Afegir Nou Registre Climatològic", fyne.TextAlignLeading, fyne.TextStyle{Bold: true}),
+		form,
+	)
+
+	return container.NewBorder(formContainer, nil, nil, nil, tabla)
 }
 
-// Realitzem una funció per obtenir tots els Registres en un Slice de Slices através d'una interficie que ens sera retornada
+// getRegistresSlice retorna les dades en format matriu per a la taula
 func (app *Config) getRegistresSlice() [][]interface{} {
 	var slice [][]interface{}
 
-	//Invoquem el métode inferior registresActuals()
-	registres, err := app.registresActuals()
-	if err != nil {
-		app.ErrorLog.Println(err)
-	}
+	// Encapçalats
+	slice = append(slice, []interface{}{"ID", "Data", "Precipitació", "T. Max", "T. Min", "Humitat"})
 
-	//Realitzem un append per incloure els registres obtinguts en forma de files i definint alhora les etiquetes de cada columna per la fila inicial.
-	slice = append(slice, []interface{}{"ID", "Data", "Precipitació", "Temp. Màxima", "Temp. Minima", "Humitat", "Opcions"})
-
-	//Executem un for per elaborar tantes files com resultats ha obtingut de la BD
-	for _, x := range registres {
-		//Creem una interficie buida per la fila actual
-		var filaActual []interface{}
-
-		//anem afegint a la fila actual cada un dels valors que corresponen a cada columna definida al inici
-		filaActual = append(filaActual, strconv.FormatInt(x.ID, 10))           //Transformem el valor numeric a String en base 10
-		filaActual = append(filaActual, x.Data.Format("2006-01-02"))           //Formategem la data al standard americà
-		filaActual = append(filaActual, fmt.Sprintf("%d%%", x.Precipitacio))   //Formatagem la sortida a un valor decimal enter
-		filaActual = append(filaActual, fmt.Sprintf("%d", x.TempMaxima))       //Formatagem la sortida a un valor decimal enter
-		filaActual = append(filaActual, fmt.Sprintf("%d", x.TempMinima))       //Formatagem la sortida a un valor decimal enter
-		filaActual = append(filaActual, fmt.Sprintf("%d%%", x.Humitat))        //Formatagem la sortida a un valor decimal enter
-		filaActual = append(filaActual, widget.NewButton("Borrar", func() {})) //Definim el boto per eliminar i que invocarà una funció que ja definirem
-
-		//Afegim aquesta fila a el slice de files
-		slice = append(slice, filaActual)
+	// Afegir registres emmagatzemats si n'hi ha
+	if len(app.Registres) > 0 {
+		slice = append(slice, app.Registres...)
 	}
 
 	return slice
 }
 
-// Realitzem una altre funció per obtenir tots els Registres amb un slice pero del nostre repositori en la DB
-func (app *Config) registresActuals() ([]repository.Registres, error) {
-	registres, err := app.DB.ObtenirTotsRegistres()
-	if err != nil {
-		//Capturem el possible error en el log d'errors
-		app.ErrorLog.Println(err)
-		return nil, err
-	}
+// getRegistresTable construeix el widget de taula de Fyne
+func (app *Config) getRegistresTable() *widget.Table {
+	dades := app.getRegistresSlice()
 
-	return registres, nil
+	tabla := widget.NewTable(
+		func() (int, int) {
+			return len(dades), len(dades[0])
+		},
+		func() fyne.CanvasObject {
+			return widget.NewLabel("Ample per defecte")
+		},
+		func(i widget.TableCellID, o fyne.CanvasObject) {
+			label := o.(*widget.Label)
+			label.SetText(fmt.Sprintf("%v", dades[i.Row][i.Col]))
+		},
+	)
+
+	tabla.SetColumnWidth(0, 50)
+	tabla.SetColumnWidth(1, 100)
+	tabla.SetColumnWidth(2, 110)
+	tabla.SetColumnWidth(3, 80)
+	tabla.SetColumnWidth(4, 80)
+	tabla.SetColumnWidth(5, 80)
+
+	app.RegistresTable = tabla
+	return tabla
+}
+
+// refreshRegistresTable actualitza la visualització de la taula
+func (app *Config) refreshRegistresTable() {
+	if app.RegistresTable != nil {
+		app.RegistresTable.Refresh()
+	}
+}
+
+// netejarFormulari buida els camps d'entrada
+func (app *Config) netejarFormulari() {
+	if app.AfegirRegistresDataRegistreEntrada != nil {
+		app.AfegirRegistresDataRegistreEntrada.SetText("")
+	}
+	if app.AfegirRegistresPrecipitacioEntrada != nil {
+		app.AfegirRegistresPrecipitacioEntrada.SetText("")
+	}
+	if app.AfegirRegistresTempMaximaEntrada != nil {
+		app.AfegirRegistresTempMaximaEntrada.SetText("")
+	}
+	if app.AfegirRegistresTempMinimaEntrada != nil {
+		app.AfegirRegistresTempMinimaEntrada.SetText("")
+	}
+	if app.AfegirRegistresHumitatEntrada != nil {
+		app.AfegirRegistresHumitatEntrada.SetText("")
+	}
+}
+
+// guardarRegistre gestiona la gravació de dades
+func (app *Config) guardarRegistre() error {
+	// Lògica de persistència
+	return nil
 }
