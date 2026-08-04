@@ -9,61 +9,73 @@ import (
 )
 
 func (app *Config) makeUI() {
-	// obtenir les dades de l'API (Probabilitat de precipitacions, Temperatura Max. i Min. i Humitat)
+	// Obtenir les dades de l'API (Precipitacions, Temp. Max/Min i Humitat)
 	precipitacio, tempMax, tempMin, humitat := app.getClimaText()
-	//insertar la informació dins del contenidor
+
 	climaDadesContent := container.NewGridWithColumns(4,
 		precipitacio,
 		tempMax,
 		tempMin,
 		humitat,
-	) //Definim un contenidor amb una graella amb quatre columnes
+	)
 
 	app.ClimaDadesContainer = climaDadesContent
 
-	//obtenim la barra d'eines o toolbar
+	// Obtenir la barra d'eines
 	toolBar := app.getToolBar(app.MainWindow)
 
 	pronosticTabContent := app.pronosticTab()
-	//Crearem una variable que contindrà el contenidor amb la taula de Registres
 	registresTabContent := app.registresTab()
 
-	//obtenim les pestanyes de l'aplicació
-	tabs := container.NewAppTabs( //Definim un contenidor per les pestanyes i dins afegim cada una de les pestanyes amb icones
+	// Obtenir les pestanyes de l'aplicació
+	tabs := container.NewAppTabs(
 		container.NewTabItemWithIcon("Pronòstic", theme.HomeIcon(), pronosticTabContent),
 		container.NewTabItemWithIcon("Diari Meteorològic", theme.InfoIcon(), registresTabContent),
 	)
 
-	//Afegim aquesta instrucció per determinar la posició de les pestanyes
 	tabs.SetTabLocation(container.TabLocationTop)
 
-	//afegir el contenidor a la finestra
-	finalContent := container.NewVBox(climaDadesContent, toolBar, tabs) //Definim un nou contenidor i que afegirem al canvas general.
+	// Agrupem el clima i la toolbar a la part superior
+	topContainer := container.NewVBox(climaDadesContent, toolBar)
 
-	//Invoquem la pàgina principal i fem servir el mètode SetContent per afegir el contenidor
+	// Utilitzem NewBorder per a que les pestanyes ocupin tot l'espai central
+	finalContent := container.NewBorder(topContainer, nil, nil, nil, tabs)
+
 	app.MainWindow.SetContent(finalContent)
 
-	//Realitzem una funcio anonima que sera invocada per una GoRutine en segon pla
+	// Goroutine en segon pla per actualitzar cada 2 minuts
 	go func() {
-		for range time.Tick(time.Minute * 2) {
-			app.actualitzarClimaDadesContent() //Invoquem la funcio de refrescar les dades meterologiques
+		ticker := time.NewTicker(2 * time.Minute)
+		defer ticker.Stop()
+
+		for range ticker.C {
+			app.actualitzarClimaDadesContent()
 		}
 	}()
 }
 
 func (app *Config) actualitzarClimaDadesContent() {
-	app.InfoLog.Print("actualitzar les dades meterologiques") //Realitzem un log per tenir constancia que s'esta executant la gorutine
-	precipitacio, tempMax, tempMin, humitat := app.getClimaText()
-	app.ClimaDadesContainer.Objects = []fyne.CanvasObject{precipitacio, tempMax, tempMin, humitat}
-	app.ClimaDadesContainer.Refresh()
+	if app.InfoLog != nil {
+		app.InfoLog.Print("actualitzar les dades meteorològiques")
+	}
 
-	grafic := app.obtenirGrafic()
-	app.PronosticGraficContainer.Objects = []fyne.CanvasObject{grafic}
-	app.PronosticGraficContainer.Refresh()
+	precipitacio, tempMax, tempMin, humitat := app.getClimaText()
+
+	if app.ClimaDadesContainer != nil {
+		app.ClimaDadesContainer.Objects = []fyne.CanvasObject{precipitacio, tempMax, tempMin, humitat}
+		app.ClimaDadesContainer.Refresh()
+	}
+
+	if app.PronosticGraficContainer != nil {
+		grafic := app.obtenirGrafic()
+		app.PronosticGraficContainer.Objects = []fyne.CanvasObject{grafic}
+		app.PronosticGraficContainer.Refresh()
+	}
 }
 
 func (app *Config) actualitzarRegistresTable() {
-	//Invoquem el mètode contenidor dels slices i l'asignem a l'atribut Registres del struct Config
 	app.Registres = app.getRegistresSlice()
-	app.RegistresTable.Refresh()
+	if app.RegistresTable != nil {
+		app.RegistresTable.Refresh()
+	}
 }
