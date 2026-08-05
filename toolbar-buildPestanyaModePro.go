@@ -11,6 +11,20 @@ import (
 // =============================================================================
 
 func (app *Config) buildPestanyaModePro() (fyne.CanvasObject, func()) {
+	// 1. CAMP D'ENTRADA PER LA API KEY D'AEMET
+	apiKeyEntry := widget.NewEntry()
+	apiKeyEntry.SetPlaceHolder("Introdueix la teva API Key d'AEMET...")
+	// Carrega la clau des de les preferències guardades
+	apiKeyGuardada := app.App.Preferences().StringWithFallback("aemet_api_key", "")
+	apiKeyEntry.SetText(apiKeyGuardada)
+
+	apiKeyContainer := container.NewVBox(
+		widget.NewLabelWithStyle("AEMET API Key:", fyne.TextAlignLeading, fyne.TextStyle{Bold: true}),
+		apiKeyEntry,
+		widget.NewSeparator(),
+	)
+
+	// 2. CHECKBOXES DEL FILTRE JERÀRQUIC
 	var checkTodaEspana, checkCatalunya, checkBarcelona, checkGirona, checkMadridCCAA, checkMadridProv *widget.Check
 	var actualitzantCascada bool = false
 
@@ -111,12 +125,19 @@ func (app *Config) buildPestanyaModePro() (fyne.CanvasObject, func()) {
 	scrollArbre := container.NewVScroll(arbreContengut)
 	scrollArbre.SetMinSize(fyne.NewSize(320, 140))
 
+	// 3. VISTA PRINCIPAL
 	vista := container.NewVBox(
+		apiKeyContainer,
 		widget.NewLabel("Filtre Jeràrquic (Autonomies / Províncies / Municipis):"),
 		scrollArbre,
 	)
 
+	// 4. ACCIÓ DE GUARDAR
 	guardarPreferenciesPro := func() {
+		// Guardar l'API Key a les preferències de la app
+		app.App.Preferences().SetString("aemet_api_key", apiKeyEntry.Text)
+
+		// Guardar l'estat dels checkboxes
 		app.App.Preferences().SetBool("pro_tota_espanya", checkTodaEspana.Checked)
 		app.App.Preferences().SetBool("pro_catalunya", checkCatalunya.Checked)
 		app.App.Preferences().SetBool("pro_barcelona", checkBarcelona.Checked)
