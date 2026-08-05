@@ -2,15 +2,14 @@ package main
 
 import (
 	"fyne.io/fyne/v2"
-
+	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 )
 
-// getToolBar construeix la barra d'eines superior
-func (app *Config) getToolBar(_ fyne.Window) *widget.Toolbar {
+func (app *Config) getToolBar(win fyne.Window) fyne.CanvasObject {
 	toolBar := widget.NewToolbar(
-		widget.NewToolbarSpacer(),
 		widget.NewToolbarAction(theme.DocumentCreateIcon(), func() {
 			app.addRegistresDialog()
 		}),
@@ -18,11 +17,12 @@ func (app *Config) getToolBar(_ fyne.Window) *widget.Toolbar {
 			app.actualitzarClimaDadesContent()
 		}),
 		widget.NewToolbarAction(theme.SettingsIcon(), func() {
-			w := app.mostrarPreferencies()
-			w.Resize(fyne.NewSize(350, 250))
-			w.Show()
+			d := app.mostrarPreferencies(win)
+			d.Resize(fyne.NewSize(350, 250))
+			d.Show()
 		}),
 	)
 
-	return toolBar
+	// El spacer empuja la barra de herramientas totalmente a la derecha
+	return container.NewHBox(layout.NewSpacer(), toolBar)
 }
