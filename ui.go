@@ -43,9 +43,9 @@ func (app *Config) makeUI() {
 
 	app.MainWindow.SetContent(finalContent)
 
-	// Goroutine en segon pla per actualitzar cada 2 minuts
+	// Goroutine en segon pla per actualitzar cada 15 minuts
 	go func() {
-		ticker := time.NewTicker(2 * time.Minute)
+		ticker := time.NewTicker(15 * time.Minute)
 		defer ticker.Stop()
 
 		for range ticker.C {
