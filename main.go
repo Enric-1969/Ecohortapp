@@ -41,6 +41,8 @@ func main() {
 	myApp.setupDB(sqlDB)
 
 	// 5. Inicialitzar el client HTTP amb timeout
+	// Es el tiempo que espera la aplicación a que
+	// la API responda antes de cancelar la conexión
 	myApp.HTTPClient = http.Client{
 		Timeout: 15 * time.Second,
 	}
