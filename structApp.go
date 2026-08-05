@@ -44,6 +44,17 @@ type AemetRespuestaAPI struct {
 	Metadatos   string `json:"metadatos"`
 }
 
+type Municipio struct {
+	ID        string `json:"id"`     // Ej: "id08001"
+	IDOld     string `json:"id_old"` // Ej: "08001" (Código INE de 5 dígitos)
+	Nombre    string `json:"nombre"` // Ej: "Abrera"
+	Longitude string `json:"longitud"`
+	Latitude  string `json:"latitud"`
+	Altitude  string `json:"altitud"`
+	Provincia string `json:"-"` // Calculado según los 2 primeros dígitos de IDOld
+	CCAA      string `json:"-"` // Calculado según la provincia
+}
+
 // UserConfig define las preferencias del usuario para config.json
 type UserConfig struct {
 	MunicipioCodigo string   `json:"municipio_codigo"`
