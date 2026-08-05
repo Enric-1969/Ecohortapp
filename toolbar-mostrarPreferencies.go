@@ -1,37 +1,31 @@
 package main
 
 import (
+	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
 )
 
-// =============================================================================
+// ============================================================================
 // FUNCIÓ PRINCIPAL / DIÀLEG D'AJUSTAMENTS
-// =============================================================================
+// ============================================================================
 
-func (app *Config) mostrarPreferencies() dialog.Dialog {
-	vistaMunicipi, getCodiMunicipi := app.buildPestanyaMunicipi()
-	vistaModePro, guardarPreferenciesPro := app.buildPestanyaModePro()
+func (cfg *Config) mostrarPreferencies(win fyne.Window) dialog.Dialog {
+	vistaMunicipi := cfg.buildPestanyaMunicipi(win)
+	vistaModePro, guardarPreferenciesPro := cfg.buildPestanyaModePro()
 
 	pestanyes := container.NewAppTabs(
 		container.NewTabItem("Per Municipi", vistaMunicipi),
 		container.NewTabItem("Mode PRO", vistaModePro),
 	)
 
-	return dialog.NewCustomConfirm(
-		"Configurar ajustaments",
-		"Guardar",
-		"Cancelar",
-		pestanyes,
-		func(valid bool) {
-			if valid {
-				municipi = getCodiMunicipi()
-				app.municipi = municipi
-				app.App.Preferences().SetString("municipi", municipi)
+	d := dialog.NewCustomConfirm("Preferències", "Guardar", "Cancel·lar", pestanyes, func(guardar bool) {
+		if guardar {
+			if guardarPreferenciesPro != nil {
 				guardarPreferenciesPro()
-				app.actualitzarClimaDadesContent()
 			}
-		},
-		app.MainWindow,
-	)
+		}
+	}, win)
+
+	return d
 }
