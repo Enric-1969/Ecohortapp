@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"strings"
 )
 
@@ -25,32 +26,57 @@ var MapaCCAA = map[string]string{
 	"49": "Castilla y León", "50": "Aragón", "51": "Ceuta", "52": "Melilla",
 }
 
-// ObtenirMunicipiosAEMET descarrega la llista de municipis i assigna la CCAA segons el codi INE
 func ObtenirMunicipiosAEMET(apiKey string) ([]Municipio, error) {
+	// Si la apiKey no viene en la llamada, la busca automáticamente en las variables del entorno (.env)
+	if strings.TrimSpace(apiKey) == "" {
+		apiKey = os.Getenv("AEMET_API_KEY")
+		if apiKey == "" {
+			apiKey = os.Getenv("API_KEY")
+		}
+		if apiKey == "" {
+			apiKey = os.Getenv("AEMET_APIKEY")
+		}
+	}
+
+	if strings.TrimSpace(apiKey) == "" {
+		return nil, fmt.Errorf("no s'ha trobat la API Key d'AEMET al fitxer .env ni a la configuració")
+	}
+
 	urlMaestro := "https://opendata.aemet.es/opendata/api/maestros/municipios?api_key=" + apiKey
 
 	// Paso 1: Petición a la API maestro de AEMET
 	resp, err := http.Get(urlMaestro)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error de connexió: %v", err)
 	}
 	defer resp.Body.Close()
 
+	if resp.StatusCode != http.StatusOK {
+		if resp.StatusCode == 429 {
+			return nil, fmt.Errorf("s'ha superat el límit de peticions d'AEMET (HTTP 429). Espera 1 minut")
+		}
+		return nil, fmt.Errorf("resposta HTTP no vàlida d'AEMET: %d", resp.StatusCode)
+	}
+
 	var apiResp AemetRespuestaAPI
 	if err := json.NewDecoder(resp.Body).Decode(&apiResp); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error llegint resposta inicial d'AEMET: %v", err)
 	}
 
 	if apiResp.Estado != 200 {
-		return nil, fmt.Errorf("error d'AEMET: %s", apiResp.Descripcion)
+		return nil, fmt.Errorf("error d'AEMET (%d): %s", apiResp.Estado, apiResp.Descripcion)
 	}
 
 	// Paso 2: Descarga del JSON real desde la URL temporal (apiResp.Datos)
 	datosResp, err := http.Get(apiResp.Datos)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error descarregant dades del municipi: %v", err)
 	}
 	defer datosResp.Body.Close()
+
+	if datosResp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("error HTTP %d en descarregar el fitxer de municipis", datosResp.StatusCode)
+	}
 
 	body, err := io.ReadAll(datosResp.Body)
 	if err != nil {
@@ -59,7 +85,7 @@ func ObtenirMunicipiosAEMET(apiKey string) ([]Municipio, error) {
 
 	var municipios []Municipio
 	if err := json.Unmarshal(body, &municipios); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error processant el JSON de municipis: %v", err)
 	}
 
 	// Enriquecer cada municipio con la CCAA basada en los 2 primeros dígitos del código INE
