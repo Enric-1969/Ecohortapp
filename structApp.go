@@ -58,6 +58,7 @@ type Municipio struct {
 // UserConfig define las preferencias del usuario para config.json
 type UserConfig struct {
 	MunicipioCodigo string   `json:"municipio_codigo"`
+	MunicipioNombre string   `json:"municipio_nombre"`
 	Municipios      []string `json:"municipios"`
 }
 
