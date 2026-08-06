@@ -32,10 +32,7 @@ func (app *Config) buildPestanyaMunicipi(win fyne.Window) fyne.CanvasObject {
 
 		go func() {
 			var err error
-			// Llegim la clau d'AEMET guardada des de les preferències
-			apiKey := app.App.Preferences().StringWithFallback("aemet_api_key", "")
-
-			totsMunicipis, err = ObtenirMunicipiosAEMET(apiKey)
+			totsMunicipis, err = app.ObtenirMunicipiosAEMET()
 			progress.Hide()
 
 			if err != nil {
