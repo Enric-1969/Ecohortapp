@@ -1,9 +1,13 @@
 package main
 
 import (
-	"errors"
+	"fmt"
 	"io"
+	"log"
+	"net/http"
+	"net/url"
 	"os"
+	"strings"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -22,12 +26,26 @@ func (app *Config) pronosticTab() *fyne.Container {
 }
 
 func (app *Config) obtenirGrafic() *canvas.Image {
-	apiURL := "https://my.meteoblue.com/visimage/meteogram_web_hd?look=KILOMETER_PER_HOUR%2CCELSIUS%2CMILLIMETER&apikey=5838a18e295d&temperature=C&windspeed=kmh&precipitationamount=mm&winddirection=3char&city=Abrera&iso2=es&lat=41.5168&lon=1.901&asl=111&tz=Europe%2FMadrid&lang=es&sig=b353aab637f77ab97ae54cbd760554f2"
+	nomMunicipi := app.UserConfig.MunicipioNombre
+	if nomMunicipi == "" {
+		nomMunicipi = "Abrera"
+	}
+
+	if idx := strings.Index(nomMunicipi, "("); idx != -1 {
+		nomMunicipi = nomMunicipi[:idx]
+	}
+	nomMunicipi = strings.TrimSpace(nomMunicipi)
+
+	cityEscaped := url.QueryEscape(nomMunicipi)
+
+	// URL con formato gráfico alternativo
+	apiURL := fmt.Sprintf("https://wttr.in/%s_2pn_lang=es.png", cityEscaped)
 
 	var img *canvas.Image
 
 	err := app.descarregarArxiu(apiURL, "pronostic.png")
 	if err != nil {
+		log.Println("Error descarregant el gràfic de temps:", err)
 		img = canvas.NewImageFromResource(resourceNodisponiblePng)
 	} else {
 		img = canvas.NewImageFromFile("pronostic.png")
@@ -39,15 +57,32 @@ func (app *Config) obtenirGrafic() *canvas.Image {
 	return img
 }
 
+func (app *Config) actualitzarGraficPronostic() {
+	if app.PronosticGraficContainer == nil {
+		return
+	}
+
+	nouGrafic := app.obtenirGrafic()
+	app.PronosticGraficContainer.Objects = []fyne.CanvasObject{nouGrafic}
+	app.PronosticGraficContainer.Refresh()
+}
+
 func (app *Config) descarregarArxiu(URL string, nomArxiu string) error {
-	response, err := app.HTTPClient.Get(URL)
+	req, err := http.NewRequest("GET", URL, nil)
+	if err != nil {
+		return err
+	}
+
+	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+
+	response, err := app.HTTPClient.Do(req)
 	if err != nil {
 		return err
 	}
 	defer response.Body.Close()
 
 	if response.StatusCode != 200 {
-		return errors.New("rebem un codi de resposta erronia quan descarreguem la imatge")
+		return fmt.Errorf("error HTTP %d al descarregar la imatge d'URL: %s", response.StatusCode, URL)
 	}
 
 	b, err := io.ReadAll(response.Body)
