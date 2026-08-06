@@ -24,6 +24,12 @@ func (cfg *Config) mostrarPreferencies(win fyne.Window) dialog.Dialog {
 			if guardarPreferenciesPro != nil {
 				guardarPreferenciesPro()
 			}
+
+			// 1. Guardar la configuració al fitxer config.json
+			_ = SaveConfig(cfg.UserConfig)
+
+			// 2. Refrescar la pantalla principal amb el nou municipi seleccionat
+			go cfg.actualitzarClimaDadesContent()
 		}
 	}, win)
 
