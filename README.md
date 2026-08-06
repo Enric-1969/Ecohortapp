@@ -4,6 +4,22 @@
 
 ---
 
+## 🔑 Configuración de la API Key de AEMET
+
+Para obtener datos meteorológicos de la AEMET, es necesaria una clave gratuita que se puede solicitar en [AEMET OpenData](https://opendata.aemet.es/).
+
+La clave se puede configurar de dos formas:
+
+1. **Desde la interfaz gráfica (Usuarios finales):**
+   * Abre la aplicación y haz clic en **Preferencias (⚙️)**.
+   * Entra en la pestaña **Mode PRO**, pega tu clave y haz clic en **Guardar**.
+
+2. **Mediante archivo `.env` (Desarrolladores / Entorno local):**
+   * Copia o renombra el archivo `.env.example` a `.env`.
+   * Añade tu clave en la variable: `AEMET_API_KEY=tu_clave_aqui`.
+
+---
+
 ## 🚀 Características principales
 
 * 🌤️ **Monitoreo meteorológico:** Consulta de datos climáticos y pronósticos detallados.
@@ -11,7 +27,7 @@
   * 📍 **Per Municipi:** Búsqueda rápida y sincronizada por **Nombre** o **Código INE/AEMET**.
   * ⚡ **Mode PRO:** Filtro jerárquico masivo con selección en cascada por **Comunidades Autónomas y Provincias**.
 * ⚡ **Consultas concurrentes:** Descargas asíncronas optimizadas mediante Goroutines y semáforos de red.
-* 💾 **Persistencia de datos:** Guardado automático y mantenido del estado de cada casilla y municipio mediante preferencias locales.
+* 💾 **Persistencia de datos:** Guardado automático del estado de cada casilla y municipio mediante preferencias locales y SQLite.
 * 🎨 **Interfaz adaptable:** Diseñada con la librería gráfica Fyne (compatible con Windows, Linux, macOS y WebAssembly).
 
 ---
@@ -20,22 +36,41 @@
 
 1. **Tener instalado Go** (versión 1.22 o superior).
 2. Clona o descarga este repositorio en tu equipo.
-3. Asegúrate de configurar la clave de API de AEMET en el archivo `.env`:
+3. Configura la clave de API de AEMET (puedes crear el archivo `.env` a partir de `.env.example` o introducirla directamente desde la propia aplicación).
 
-```env
-AEMET_API_KEY=tu_clave_aqui
-```
+---
 
 ## 🏗️ Estructura del Proyecto
 
-* `main.go`: Punto de entrada de la aplicación.
-* `config.go`: Gestión de carga y guardado de preferencias del usuario (config.json y Preferences).
-* `ui.go`: Diseño de la pantalla y contenedores principales de la interfaz gráfica.
-* `toolbar.go`: Ventana modal de ajustes dividida modularmente (Per Municipi y Mode PRO).
-* `clima-valors.go`: Peticiones HTTP y lógica de descarga de datos de AEMET.
-* `clima-text.go`: Formateo e interpretación de datos meteorológicos.
+### 📌 Núcleo e Interfaz Principal
+* **`main.go`**: Punto de entrada e inicialización de la aplicación.
+* **`structApp.go`**: Definición centralizada de las estructuras de datos (`Config`, `UserConfig`, `Diaria`, `Municipio`, etc.).
+* **`ui.go`**: Construcción del layout principal y orquestación del refresco de vistas (`actualitzarClimaDadesContent`).
+* **`config.go`**: Carga, guardado y persistencia de las preferencias de usuario (`config.json`).
+* **`db.go`**: Conexión y gestión del almacenamiento persistente en SQLite.
+* **`bundled.go`**: Recursos e imágenes empaquetados directamente en el ejecutable.
+* **`repository/`**: Capa de abstracción y repositorio de base de datos.
+
+### 🌤️ Servicio Meteorológico (AEMET & Gráficos)
+* **`clima-valors.go`**: Peticiones HTTP a AEMET y procesado de predicciones (`GetPrediccions`, `GetPreUrl`, `GetPrediccio`).
+* **`clima-text.go`**: Formateo e interpretación de los datos del clima para las etiquetas textuales.
+* **`aemet_maestros.go`**: Descarga, filtrado y mapeo del listado general de municipios españoles.
+* **`aemet-client.go`**: Cliente HTTP auxiliar para la conexión con las APIs externas.
+* **`pronostic-pestanya.go`**: Renderizado de la pestaña visual del tiempo (gráfico de Meteoblue).
+
+### 🛠️ Componentes de la Interfaz y Diálogos
+* **`registre-pestanya.go`**: Pestaña de historial de datos con vista de tabla.
+* **`toolbar.go`**: Construcción de la barra de herramientas superior.
+* **`toolbar-buildPestanyaMunicipi.go`**: Pestaña de selección de municipio por búsqueda rápida de nombre o código.
+* **`toolbar-buildPestanyaModePro.go`**: Pestaña de filtrado por CCAA/Provincia y ajuste de API Key.
+* **`toolbar-mostrarPreferencies.go`**: Ventana modal de preferencias globales.
+* **`toolbar-addRegistresDialog.go`**: Diálogo modal para introducir manualmente nuevos registros climáticos.
+
+---
 
 ## 💻 Ejecución
-Al ejecutar la aplicación desde la terminal con: go run .
 
-![EcoHortApp en funcionamiento](pronostic.png)
+Ejecuta la aplicación desde la terminal con:
+
+```bash
+go run .
