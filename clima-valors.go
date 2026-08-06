@@ -13,8 +13,6 @@ import (
 	"github.com/joho/godotenv"
 )
 
-var municipi = "08001" // Definim el municipi per defecte per la consulta dels valors climatologics
-
 var apiKey string
 
 func init() {
@@ -22,16 +20,14 @@ func init() {
 	if err != nil {
 		log.Println("Aviso: No se pudo cargar el archivo .env")
 	}
-	// Cargar la API key únicamente desde la variable de entorno
 	apiKey = os.Getenv("AEMET_API_KEY")
 }
 
 // Realitzem una funció per gestionar l'obtenció de les dades climatologiques
 func (g *Diaria) GetPrediccions() (*Diaria, error) {
-	// Si no se asignó CodiIne, usamos el valor por defecto
 	codi := g.CodiIne
 	if codi == "" {
-		codi = municipi
+		codi = "08001"
 	}
 
 	result, err := GetPreUrl(codi)
@@ -111,7 +107,6 @@ func GetPrediccio(url string) (*Diaria, error) {
 		return nil, err
 	}
 
-	// Validació de seguretat per evitar panic per índex fora de rang
 	if len(prediccio) == 0 || len(prediccio[0].Prediccion.Dia) == 0 {
 		return nil, errors.New("la resposta d'AEMET no conté dades de predicció vàlides")
 	}
