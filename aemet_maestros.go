@@ -4,9 +4,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"strings"
+
+	"golang.org/x/text/encoding/charmap"
+	"golang.org/x/text/transform"
 )
 
 // Mapa de relació entre els 2 primers dígits del codi INE i la Comunitat Autònoma
@@ -26,79 +30,78 @@ var MapaCCAA = map[string]string{
 	"49": "Castilla y León", "50": "Aragón", "51": "Ceuta", "52": "Melilla",
 }
 
-func ObtenirMunicipiosAEMET(apiKey string) ([]Municipio, error) {
-	// Si la apiKey no viene en la llamada, la busca automáticamente en las variables del entorno (.env)
-	if strings.TrimSpace(apiKey) == "" {
-		apiKey = os.Getenv("AEMET_API_KEY")
-		if apiKey == "" {
-			apiKey = os.Getenv("API_KEY")
-		}
-		if apiKey == "" {
-			apiKey = os.Getenv("AEMET_APIKEY")
-		}
+// ObtenirMunicipiosAEMET és un mètode de (*Config)
+func (app *Config) ObtenirMunicipiosAEMET() ([]Municipio, error) {
+	// 1. Cerca de la clave con fallback: memoria app -> preferencies Fyne -> variable d'entorn
+	keyToUse := strings.TrimSpace(app.apiKey)
+	if keyToUse == "" && app.App != nil {
+		keyToUse = strings.TrimSpace(app.App.Preferences().StringWithFallback("aemet_api_key", ""))
+	}
+	if keyToUse == "" {
+		keyToUse = strings.TrimSpace(os.Getenv("AEMET_API_KEY"))
 	}
 
-	if strings.TrimSpace(apiKey) == "" {
-		return nil, fmt.Errorf("no s'ha trobat la API Key d'AEMET al fitxer .env ni a la configuració")
+	if keyToUse == "" {
+		return nil, fmt.Errorf("la API Key d'AEMET està buida. Configureu-la a la pestanya Mode PRO")
 	}
 
-	urlMaestro := "https://opendata.aemet.es/opendata/api/maestros/municipios?api_key=" + apiKey
+	// 2. Paso 1: Petición al endpoint maestro
+	urlMaestro := "https://opendata.aemet.es/opendata/api/maestro/municipios?api_key=" + keyToUse
+	log.Println("[AEMET LOG] Paso 1 - Consultant endpoint mestre:", urlMaestro)
 
-	// Paso 1: Petición a la API maestro de AEMET
-	resp, err := http.Get(urlMaestro)
+	resp, err := app.HTTPClient.Get(urlMaestro)
 	if err != nil {
-		return nil, fmt.Errorf("error de connexió: %v", err)
+		return nil, fmt.Errorf("error de connexió al Paso 1: %w", err)
 	}
 	defer resp.Body.Close()
 
+	log.Println("[AEMET LOG] Paso 1 - Status HTTP:", resp.StatusCode)
+
 	if resp.StatusCode != http.StatusOK {
-		if resp.StatusCode == 429 {
-			return nil, fmt.Errorf("s'ha superat el límit de peticions d'AEMET (HTTP 429). Espera 1 minut")
-		}
 		return nil, fmt.Errorf("resposta HTTP no vàlida d'AEMET: %d", resp.StatusCode)
 	}
 
 	var apiResp AemetRespuestaAPI
 	if err := json.NewDecoder(resp.Body).Decode(&apiResp); err != nil {
-		return nil, fmt.Errorf("error llegint resposta inicial d'AEMET: %v", err)
+		return nil, fmt.Errorf("error descodificant JSON del Paso 1: %w", err)
 	}
 
 	if apiResp.Estado != 200 {
-		return nil, fmt.Errorf("error d'AEMET (%d): %s", apiResp.Estado, apiResp.Descripcion)
+		return nil, fmt.Errorf("AEMET ha retornat l'estat %d: %s", apiResp.Estado, apiResp.Descripcion)
 	}
 
-	// Paso 2: Descarga del JSON real desde la URL temporal (apiResp.Datos)
-	datosResp, err := http.Get(apiResp.Datos)
+	// 3. Paso 2: Descargar el JSON final desde la URL firmada
+	log.Println("[AEMET LOG] Paso 2 - Descarregant municipis des de:", apiResp.Datos)
+
+	datosResp, err := app.HTTPClient.Get(apiResp.Datos)
 	if err != nil {
-		return nil, fmt.Errorf("error descarregant dades del municipi: %v", err)
+		return nil, fmt.Errorf("error de connexió al Paso 2: %w", err)
 	}
 	defer datosResp.Body.Close()
 
+	log.Println("[AEMET LOG] Paso 2 - Status HTTP:", datosResp.StatusCode)
+
 	if datosResp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("error HTTP %d en descarregar el fitxer de municipis", datosResp.StatusCode)
+		return nil, fmt.Errorf("error descarregant fitxer de municipis (HTTP %d)", datosResp.StatusCode)
 	}
 
-	body, err := io.ReadAll(datosResp.Body)
+	// Conversión de ISO-8859-1 (Latin-1) a UTF-8 para corregir acentos y caracteres especiales
+	utf8Reader := transform.NewReader(datosResp.Body, charmap.ISO8859_1.NewDecoder())
+	body, err := io.ReadAll(utf8Reader)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error llegint el cos de dades del Paso 2: %w", err)
 	}
 
 	var municipios []Municipio
 	if err := json.Unmarshal(body, &municipios); err != nil {
-		return nil, fmt.Errorf("error processant el JSON de municipis: %v", err)
+		return nil, fmt.Errorf("error processant la llista de municipis: %w", err)
 	}
 
-	// Enriquecer cada municipio con la CCAA basada en los 2 primeros dígitos del código INE
+	// 4. Mapear CCAA a cada municipio usando los 2 primeros dígitos de IDOld (Código INE)
 	for i := range municipios {
-		codINE := municipios[i].IDOld
-		if len(codINE) < 2 {
-			codINE = strings.TrimPrefix(municipios[i].ID, "id")
-			municipios[i].IDOld = codINE
-		}
-
-		if len(codINE) >= 2 {
-			prefix := codINE[:2]
-			if ccaa, ok := MapaCCAA[prefix]; ok {
+		if len(municipios[i].IDOld) >= 2 {
+			codiProv := municipios[i].IDOld[:2]
+			if ccaa, ok := MapaCCAA[codiProv]; ok {
 				municipios[i].CCAA = ccaa
 			}
 		}
