@@ -50,7 +50,7 @@ func main() {
 	// 6. Assignar configuració i API Key
 	myApp.UserConfig = userCfg
 	myApp.municipi = userCfg.MunicipioCodigo
-	myApp.apiKey = fyneApp.Preferences().StringWithFallback("apiKey", os.Getenv("AEMET_API_KEY"))
+	myApp.apiKey = fyneApp.Preferences().StringWithFallback("aemet_api_key", os.Getenv("AEMET_API_KEY"))
 
 	// 7. Crear la finestra principal
 	myApp.MainWindow = fyneApp.NewWindow("Eco Hort App")
