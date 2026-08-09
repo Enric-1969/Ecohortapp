@@ -13,60 +13,44 @@ import (
 func (app *Config) buildPestanyaMunicipi(win fyne.Window) fyne.CanvasObject {
 	labelInfo := widget.NewLabel("Selecciona la teva Comunitat Autònoma i Municipi:")
 
-	// Desplegables per CCAA i Municipi
 	selectCCAA := widget.NewSelect([]string{}, nil)
 	selectCCAA.PlaceHolder = "Selecciona CCAA..."
 
 	selectMunicipi := widget.NewSelect([]string{}, nil)
 	selectMunicipi.PlaceHolder = "Selecciona Municipi..."
-	selectMunicipi.Disable() // Desactivat fins que es triï CCAA
+	selectMunicipi.Disable()
 
-	// Mapa intern per relacionar el nom del municipi amb el seu objecte/codi
 	municipisPerNom := make(map[string]Municipio)
-	var totsMunicipis []Municipio
 
-	// Botó per carregar/actualitzar la llista des de l'API d'AEMET
-	btnCarregar := widget.NewButton("Carregar Municipis d'AEMET", func() {
-		progress := dialog.NewCustom("AEMET", "Cancel·lar", widget.NewLabel("Descarregant llista de municipis..."), win)
-		progress.Show()
-
-		go func() {
-			var err error
-			totsMunicipis, err = app.ObtenirMunicipiosAEMET()
-			progress.Hide()
-
-			if err != nil {
-				dialog.ShowError(fmt.Errorf("error descarregant municipis: %v", err), win)
-				return
+	// Auxiliar per a poblar el desplegable de CCAA des de la memòria RAM
+	poblarCCAA := func() {
+		mapaCCAAUniques := make(map[string]bool)
+		for _, m := range app.Municipis {
+			if m.CCAA != "" {
+				mapaCCAAUniques[m.CCAA] = true
 			}
+		}
 
-			// Extreure llista única de CCAA i ordenar-la
-			mapaCCAAUniques := make(map[string]bool)
-			for _, m := range totsMunicipis {
-				if m.CCAA != "" {
-					mapaCCAAUniques[m.CCAA] = true
-				}
-			}
+		var llistaCCAA []string
+		for ccaa := range mapaCCAAUniques {
+			llistaCCAA = append(llistaCCAA, ccaa)
+		}
+		sort.Strings(llistaCCAA)
 
-			var llistaCCAA []string
-			for ccaa := range mapaCCAAUniques {
-				llistaCCAA = append(llistaCCAA, ccaa)
-			}
-			sort.Strings(llistaCCAA)
+		selectCCAA.Options = llistaCCAA
+		selectCCAA.Refresh()
+	}
 
-			selectCCAA.Options = llistaCCAA
-			selectCCAA.Refresh()
-			dialog.ShowInformation("Èxit", fmt.Sprintf("S'han carregat %d municipis.", len(totsMunicipis)), win)
-		}()
-	})
-
-	// Quan l'usuari tria una CCAA, filtrem els municipis d'aquesta regió
 	selectCCAA.OnChanged = func(ccaaSeleccionada string) {
+		if ccaaSeleccionada == "" {
+			return
+		}
+
 		selectMunicipi.ClearSelected()
 		municipisPerNom = make(map[string]Municipio)
 		var opcionsMunicipis []string
 
-		for _, m := range totsMunicipis {
+		for _, m := range app.Municipis {
 			if m.CCAA == ccaaSeleccionada {
 				nomClau := fmt.Sprintf("%s (%s)", m.Nombre, m.IDOld)
 				opcionsMunicipis = append(opcionsMunicipis, nomClau)
@@ -80,17 +64,50 @@ func (app *Config) buildPestanyaMunicipi(win fyne.Window) fyne.CanvasObject {
 		selectMunicipi.Refresh()
 	}
 
-	// Quan l'usuari tria un municipi, guardem les dades a la configuració
 	selectMunicipi.OnChanged = func(municipiSeleccionat string) {
 		if m, ok := municipisPerNom[municipiSeleccionat]; ok {
 			app.UserConfig.MunicipioCodigo = m.IDOld
 			app.UserConfig.MunicipioNombre = m.Nombre
-
-			// Convertim la latitud i longitud d'AEMET a decimal (funció ubicat a utils.go)
 			app.UserConfig.Latitud = parseAEMETCoord(m.Latitude)
 			app.UserConfig.Longitud = parseAEMETCoord(m.Longitude)
 
 			app.municipi = m.IDOld
+		}
+	}
+
+	btnCarregar := widget.NewButton("Carregar Municipis d'AEMET", func() {
+		progress := dialog.NewCustom("AEMET", "Cancel·lar", widget.NewLabel("Descarregant llista de municipis..."), win)
+		progress.Show()
+
+		go func() {
+			var err error
+			app.Municipis, err = app.ObtenirMunicipiosAEMET()
+			progress.Hide()
+
+			if err != nil {
+				dialog.ShowError(fmt.Errorf("error descarregant municipis: %v", err), win)
+				return
+			}
+
+			poblarCCAA()
+			dialog.ShowInformation("Èxit", fmt.Sprintf("S'han carregat %d municipis.", len(app.Municipis)), win)
+		}()
+	})
+
+	// SI JA HI HA MUNICIPIS EN RAM: Reutilitzar immediatament i seleccionar l'actual
+	if len(app.Municipis) > 0 {
+		poblarCCAA()
+
+		// Seleccionar automàticament el municipi guardat actualment
+		if app.UserConfig.MunicipioCodigo != "" {
+			for _, m := range app.Municipis {
+				if m.IDOld == app.UserConfig.MunicipioCodigo {
+					selectCCAA.SetSelected(m.CCAA)
+					nomClau := fmt.Sprintf("%s (%s)", m.Nombre, m.IDOld)
+					selectMunicipi.SetSelected(nomClau)
+					break
+				}
+			}
 		}
 	}
 
