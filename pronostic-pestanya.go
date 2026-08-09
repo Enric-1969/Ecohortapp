@@ -26,6 +26,17 @@ func (app *Config) pronosticTab() *fyne.Container {
 }
 
 func (app *Config) obtenirGrafic() *canvas.Image {
+	apiKey := "zpPLdN8ijMAacbGX"
+
+	// Coordenadas
+	lat := app.UserConfig.Latitud
+	lon := app.UserConfig.Longitud
+
+	if lat == 0 || lon == 0 {
+		lat = 41.5161
+		lon = 1.9021
+	}
+
 	nomMunicipi := app.UserConfig.MunicipioNombre
 	if nomMunicipi == "" {
 		nomMunicipi = "Abrera"
@@ -36,16 +47,20 @@ func (app *Config) obtenirGrafic() *canvas.Image {
 	}
 	nomMunicipi = strings.TrimSpace(nomMunicipi)
 
-	cityEscaped := url.QueryEscape(nomMunicipi)
-
-	// URL con formato gráfico alternativo
-	apiURL := fmt.Sprintf("https://wttr.in/%s_2pn_lang=es.png", cityEscaped)
+	// URL con todos los parámetros requeridos por Meteoblue
+	apiURL := fmt.Sprintf(
+		"https://my.meteoblue.com/images/meteogram?lat=%.4f&lon=%.4f&asl=100&tz=Europe%%2FMadrid&apikey=%s&format=png&dpi=72&lang=es&temperature_units=C&precipitation_units=mm&windspeed_units=kmh&location_name=%s",
+		lat,
+		lon,
+		apiKey,
+		url.QueryEscape(nomMunicipi),
+	)
 
 	var img *canvas.Image
 
 	err := app.descarregarArxiu(apiURL, "pronostic.png")
 	if err != nil {
-		log.Println("Error descarregant el gràfic de temps:", err)
+		log.Println("Error descarregant el gràfic de Meteoblue:", err)
 		img = canvas.NewImageFromResource(resourceNodisponiblePng)
 	} else {
 		img = canvas.NewImageFromFile("pronostic.png")
@@ -73,7 +88,7 @@ func (app *Config) descarregarArxiu(URL string, nomArxiu string) error {
 		return err
 	}
 
-	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64)")
 
 	response, err := app.HTTPClient.Do(req)
 	if err != nil {
@@ -81,13 +96,14 @@ func (app *Config) descarregarArxiu(URL string, nomArxiu string) error {
 	}
 	defer response.Body.Close()
 
-	if response.StatusCode != 200 {
-		return fmt.Errorf("error HTTP %d al descarregar la imatge d'URL: %s", response.StatusCode, URL)
-	}
-
 	b, err := io.ReadAll(response.Body)
 	if err != nil {
 		return err
+	}
+
+	// Si el servidor no responde 200 OK, imprimimos el mensaje exacto que nos envía Meteoblue
+	if response.StatusCode != 200 {
+		return fmt.Errorf("error HTTP %d al descarregar la imatge. Resposta de Meteoblue: %s", response.StatusCode, string(b))
 	}
 
 	err = os.WriteFile(nomArxiu, b, 0644)

@@ -60,6 +60,8 @@ type UserConfig struct {
 	MunicipioCodigo string   `json:"municipio_codigo"`
 	MunicipioNombre string   `json:"municipio_nombre"`
 	Municipios      []string `json:"municipios"`
+	Latitud         float64  `json:"latitud"`
+	Longitud        float64  `json:"longitud"`
 }
 
 // Estructures del fitxers clima-valors.go

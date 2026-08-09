@@ -80,10 +80,16 @@ func (app *Config) buildPestanyaMunicipi(win fyne.Window) fyne.CanvasObject {
 		selectMunicipi.Refresh()
 	}
 
-	// Quan l'usuari tria un municipi, guardem el codi INE a la configuració
+	// Quan l'usuari tria un municipi, guardem les dades a la configuració
 	selectMunicipi.OnChanged = func(municipiSeleccionat string) {
 		if m, ok := municipisPerNom[municipiSeleccionat]; ok {
 			app.UserConfig.MunicipioCodigo = m.IDOld
+			app.UserConfig.MunicipioNombre = m.Nombre
+
+			// Convertim la latitud i longitud d'AEMET a decimal (funció ubicat a utils.go)
+			app.UserConfig.Latitud = parseAEMETCoord(m.Latitude)
+			app.UserConfig.Longitud = parseAEMETCoord(m.Longitude)
+
 			app.municipi = m.IDOld
 		}
 	}
