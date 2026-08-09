@@ -34,6 +34,11 @@ type Config struct {
 	municipi                           string                //Afegim la referencia a aquest valor de configuració
 	apiKey                             string                //Afegim la referencia a aquest valor de configuració
 	UserConfig                         UserConfig
+
+	// CLEAN CODE: Estado centralizado de municipios cargados en RAM.
+	// Evita el uso de variables globales sueltas y permite compartir la lista
+	// entre pestañas de forma totalmente encapsulada y segura.
+	Municipis []Municipio
 }
 
 // Estructura per descodificar la primera resposta JSON de la API d'AEMET
