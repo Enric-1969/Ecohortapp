@@ -23,6 +23,7 @@ La clave se puede configurar de dos formas:
 ## 🚀 Características principales
 
 * 🌤️ **Monitoreo meteorológico:** Consulta de datos climáticos y pronósticos detallados.
+* 📍 **Conversión geodésica y parseo inteligente:** Soporte integral para 4 formatos de coordenadas de AEMET (DMS, sexagesimales compactas, decimales directos y métricas UTM Huso 30N) estandarizadas automáticamente a WGS84 para mapas y meteogramas.
 * ⚙️ **Sistema de Ajustes Dual (Pestañas):**
   * 📍 **Per Municipi:** Búsqueda rápida y sincronizada por **Nombre** o **Código INE/AEMET**.
   * ⚡ **Mode PRO:** Filtro jerárquico masivo con selección en cascada por **Comunidades Autónomas y Provincias**.
@@ -51,7 +52,9 @@ La clave se puede configurar de dos formas:
 * **`bundled.go`**: Recursos e imágenes empaquetados directamente en el ejecutable.
 * **`repository/`**: Capa de abstracción y repositorio de base de datos.
 
-### 🌤️ Servicio Meteorológico (AEMET & Gráficos)
+### 🌤️ Servicio Meteorológico, Geodesia & Gráficos
+* **`coord_parser.go`**: Parser multiformato para procesar y validar cadenas de coordenadas geográficas de AEMET.
+* **`geo_utm.go`**: Módulo geodésico matemático para la conversión de coordenadas UTM (Huso 30N) a WGS84.
 * **`clima-valors.go`**: Peticiones HTTP a AEMET y procesado de predicciones (`GetPrediccions`, `GetPreUrl`, `GetPrediccio`).
 * **`clima-text.go`**: Formateo e interpretación de los datos del clima para las etiquetas textuales.
 * **`aemet_maestros.go`**: Descarga, filtrado y mapeo del listado general de municipios españoles.
@@ -60,6 +63,7 @@ La clave se puede configurar de dos formas:
 
 ### 🛠️ Componentes de la Interfaz y Diálogos
 * **`registre-pestanya.go`**: Pestaña de historial de datos con vista de tabla.
+* **`mode_pro_logic.go`**: Lógica desacoplada para el cálculo y ordenación del árbol jerárquico (CCAA / Provincias).
 * **`toolbar.go`**: Construcción de la barra de herramientas superior.
 * **`toolbar-buildPestanyaMunicipi.go`**: Pestaña de selección de municipio por búsqueda rápida de nombre o código.
 * **`toolbar-buildPestanyaModePro.go`**: Pestaña de filtrado por CCAA/Provincia y ajuste de API Key.
