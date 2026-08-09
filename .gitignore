@@ -8,7 +8,7 @@
 *.so
 *.dylib
 ecohortapp
-
+config.json
 pronostic.png
 
 # Archivos del sistema
