@@ -41,8 +41,6 @@ func main() {
 	myApp.setupDB(sqlDB)
 
 	// 5. Inicialitzar el client HTTP amb timeout
-	// Es el tiempo que espera la aplicación a que
-	// la API responda antes de cancelar la conexión
 	myApp.HTTPClient = http.Client{
 		Timeout: 15 * time.Second,
 	}
@@ -52,7 +50,17 @@ func main() {
 	myApp.municipi = userCfg.MunicipioCodigo
 	myApp.apiKey = fyneApp.Preferences().StringWithFallback("aemet_api_key", os.Getenv("AEMET_API_KEY"))
 
-	// 7. Crear la finestra principal
+	// 7. Càrrega silenciosa de municipis en segon pla (RAM / Cache)
+	go func() {
+		if m, err := myApp.ObtenirMunicipiosAEMET(); err == nil {
+			myApp.Municipis = m
+			myApp.InfoLog.Println("[INIT] Municipis carregats automàticament a la memòria RAM.")
+		} else {
+			myApp.ErrorLog.Println("[INIT] No s'han pogut carregar els municipis en segon pla:", err)
+		}
+	}()
+
+	// 8. Crear la finestra principal
 	myApp.MainWindow = fyneApp.NewWindow("Eco Hort App")
 	myApp.MainWindow.Resize(fyne.NewSize(800, 700))
 	myApp.MainWindow.SetFixedSize(true)
@@ -60,6 +68,6 @@ func main() {
 
 	myApp.makeUI()
 
-	// 8. Executar l'aplicació
+	// 9. Executar l'aplicació
 	myApp.MainWindow.ShowAndRun()
 }
