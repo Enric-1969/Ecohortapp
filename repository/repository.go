@@ -16,10 +16,10 @@ type Repository interface {
 	InsertRegistre(h Registres) (*Registres, error)
 	//Realitzarem una nova inserció en la interficie per poder obtener tots els resultats que hem enmagatzemat atraves d'un slice
 	ObtenirTotsRegistres() ([]Registres, error)
-    ObtenirRegistrePerID(id int) (*Registres, error)
-    ActualitzarRegistre(id int64, actualitzar Registres) error
-    BorrarRegistre(id int64) error
-
+	ObtenirRegistrePerID(id int) (*Registres, error)
+	ActualitzarRegistre(id int64, actualitzar Registres) error
+	BorrarRegistre(id int64) error
+	GuardarPrediccioDiaria(codiINE string, dataPrediccio int64, probPrecipitacio, tempMax, tempMin, humitat int) error
 }
 
 // A continuació definim un struct amb els camps i el tipus de dades que emprarem
