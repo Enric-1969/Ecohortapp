@@ -13,6 +13,8 @@ import (
 	"golang.org/x/text/transform"
 )
 
+const municipiosCacheFile = "municipios_cache.json"
+
 // Mapa de relació entre els 2 primers dígits del codi INE i la Comunitat Autònoma
 var MapaCCAA = map[string]string{
 	"01": "País Vasco", "02": "Castilla-La Mancha", "03": "Comunitat Valenciana", "04": "Andalucía",
@@ -32,6 +34,15 @@ var MapaCCAA = map[string]string{
 
 // ObtenirMunicipiosAEMET és un mètode de (*Config)
 func (app *Config) ObtenirMunicipiosAEMET() ([]Municipio, error) {
+	// 0. Intentar carregar des del fitxer de memòria cau local (evita crides HTTP a AEMET)
+	if data, err := os.ReadFile(municipiosCacheFile); err == nil {
+		var municipiosCache []Municipio
+		if err := json.Unmarshal(data, &municipiosCache); err == nil && len(municipiosCache) > 0 {
+			log.Println("[AEMET LOG] Carregats", len(municipiosCache), "municipis des del fitxer local en disc.")
+			return municipiosCache, nil
+		}
+	}
+
 	// 1. Cerca de la clave con fallback: memoria app -> preferencies Fyne -> variable d'entorn
 	keyToUse := strings.TrimSpace(app.apiKey)
 	if keyToUse == "" && app.App != nil {
@@ -85,7 +96,7 @@ func (app *Config) ObtenirMunicipiosAEMET() ([]Municipio, error) {
 		return nil, fmt.Errorf("error descarregant fitxer de municipis (HTTP %d)", datosResp.StatusCode)
 	}
 
-	// Conversión de ISO-8859-1 (Latin-1) a UTF-8 para corregir acentos y caracteres especiales
+	// Conversión de ISO-8859-1 (Latin-1) a UTF-8
 	utf8Reader := transform.NewReader(datosResp.Body, charmap.ISO8859_1.NewDecoder())
 	body, err := io.ReadAll(utf8Reader)
 	if err != nil {
@@ -105,6 +116,12 @@ func (app *Config) ObtenirMunicipiosAEMET() ([]Municipio, error) {
 				municipios[i].CCAA = ccaa
 			}
 		}
+	}
+
+	// 5. Desat en disc per a no tornar a fer crides HTTP en futurs arrancs
+	if cacheData, err := json.Marshal(municipios); err == nil {
+		_ = os.WriteFile(municipiosCacheFile, cacheData, 0644)
+		log.Println("[AEMET LOG] Desats", len(municipios), "municipis a la memòria cau local en disc.")
 	}
 
 	return municipios, nil
