@@ -21,14 +21,26 @@ func NewSQLiteRepository(db *sql.DB) *SQLiteRepository {
 // Hem de indicar en el receptor que farem servir un punter sobre el metode NewSQLiteRepository per emprar la conexió establerta per aquestes accions
 func (repo *SQLiteRepository) Migrate() error {
 	query := `
-	create table if not exists registres(
-		id integer primary key autoincrement,
-		data_registre integer not null,
-		precipitacio integer not null,
-		temp_maxima integer not null,
-		temp_minima integer not null,
-		humitat integer not null)
-		`
+	CREATE TABLE IF NOT EXISTS registres(
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		data_registre INTEGER NOT NULL,
+		precipitacio INTEGER NOT NULL,
+		temp_maxima INTEGER NOT NULL,
+		temp_minima INTEGER NOT NULL,
+		humitat INTEGER NOT NULL
+	);
+
+	CREATE TABLE IF NOT EXISTS prediccions (
+		codi_ine TEXT NOT NULL,
+		data_prediccio INTEGER NOT NULL,
+		prob_precipitacio INTEGER NOT NULL DEFAULT 0,
+		temp_maxima INTEGER NOT NULL DEFAULT 0,
+		temp_minima INTEGER NOT NULL DEFAULT 0,
+		humitat_relativa INTEGER NOT NULL DEFAULT 0,
+		created_at INTEGER NOT NULL,
+		PRIMARY KEY (codi_ine, data_prediccio)
+	);
+	`
 
 	_, err := repo.Conn.Exec(query)
 	return err
@@ -55,18 +67,14 @@ func (repo *SQLiteRepository) InsertRegistre(registres Registres) (*Registres, e
 }
 
 func (repo *SQLiteRepository) ObtenirTotsRegistres() ([]Registres, error) {
-	//Formulem la consulta per obtenir totes les columnes de tots els registres ordenats per el camp purchase_date
 	query := "select id, data_registre, precipitacio, temp_maxima, temp_minima, humitat from registres order by data_registre"
-	//Executem la consulta
 	rows, err := repo.Conn.Query(query)
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close() //Tanquem la conexió a la bd i optimitzar
+	defer rows.Close()
 
-	//Creem una variable anomenada tots de tipus slice Registres
 	var tots []Registres
-	//Executem una estructura for per consultar un dels resultats i inclourels en el slice
 	for rows.Next() {
 		var h Registres
 		var unixTime int64
@@ -78,15 +86,19 @@ func (repo *SQLiteRepository) ObtenirTotsRegistres() ([]Registres, error) {
 			&h.TempMinima,
 			&h.Humitat,
 		)
-		//Si es produeix algun error el gestionem
 		if err != nil {
 			return nil, err
 		}
 		h.Data = time.Unix(unixTime, 0)
-		tots = append(tots, h) //Apliquem la inclusió de l'objecte dins del slice
+		tots = append(tots, h)
 	}
 
-	return tots, nil //Retornem el slice o nil segons si es genera algun error
+	// ---> AÑADE ESTAS 3 LÍNEAS AQUÍ PARA LIMPIAR EL WARNING: <---
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return tots, nil
 }
 
 // Funció per obtenir dades per ID
@@ -143,7 +155,7 @@ func (repo *SQLiteRepository) ActualitzarRegistre(id int64, actualitzar Registre
 	return nil
 }
 
-//Funció per borrar un Registre
+// Funció per borrar un Registre
 func (repo *SQLiteRepository) BorrarRegistre(id int64) error {
 	res, err := repo.Conn.Exec("delete from registres where id = ?", id)
 	if err != nil {
@@ -161,4 +173,20 @@ func (repo *SQLiteRepository) BorrarRegistre(id int64) error {
 	}
 
 	return nil
+}
+
+// GuardarPrediccioDiaria insereix o actualitza un registre a la taula prediccions
+func (repo *SQLiteRepository) GuardarPrediccioDiaria(codiINE string, dataPrediccio int64, probPrecipitacio, tempMax, tempMin, humitat int) error {
+	stmt := `
+	INSERT INTO prediccions (codi_ine, data_prediccio, prob_precipitacio, temp_maxima, temp_minima, humitat_relativa, created_at)
+	VALUES (?, ?, ?, ?, ?, ?, ?)
+	ON CONFLICT(codi_ine, data_prediccio) DO UPDATE SET
+		prob_precipitacio = excluded.prob_precipitacio,
+		temp_maxima = excluded.temp_maxima,
+		temp_minima = excluded.temp_minima,
+		humitat_relativa = excluded.humitat_relativa,
+		created_at = excluded.created_at;
+	`
+	_, err := repo.Conn.Exec(stmt, codiINE, dataPrediccio, probPrecipitacio, tempMax, tempMin, humitat, time.Now().Unix())
+	return err
 }
