@@ -25,6 +25,16 @@ func (cfg *Config) mostrarPreferencies(win fyne.Window) dialog.Dialog {
 				guardarPreferenciesPro()
 			}
 
+			// Opció A: Si l'usuari guarda des de la pestanya "Mode PRO", agafem el primer
+			// municipi de la selecció (cfg.UserConfig.Municipios) per actualitzar la vista.
+			if pestanyes.Selected() != nil && pestanyes.Selected().Text == "Mode PRO" {
+				if len(cfg.UserConfig.Municipios) > 0 {
+					primerMunicipi := cfg.UserConfig.Municipios[0]
+					cfg.municipi = primerMunicipi
+					cfg.UserConfig.MunicipioCodigo = primerMunicipi
+				}
+			}
+
 			// 1. Guardar la configuració al fitxer config.json
 			_ = SaveConfig(cfg.UserConfig)
 
