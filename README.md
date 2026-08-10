@@ -80,3 +80,14 @@ Ejecuta la aplicación desde la terminal con:
 
 ```bash
 go run .
+
+## 📦 Compilación
+
+Para generar el ejecutable binario para distribución:
+
+```bash
+# Windows (sin consola de comandos al abrir)
+go build -ldflags="-H windowsgui" -o EcoHortApp.exe .
+
+# Linux / macOS
+go build -o EcoHortApp .
