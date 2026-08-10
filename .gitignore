@@ -9,6 +9,7 @@
 *.dylib
 ecohortapp
 config.json
+municipios_cache.json
 pronostic.png
 
 # Archivos del sistema
