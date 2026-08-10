@@ -156,3 +156,14 @@ type Diaria struct {
 	HumitatRelativa  int       `json:"humedadRelativa"`
 	Time             time.Time `json:"-"`
 }
+
+// CodigoINE retorna el código INE oficial de 5 dígitos limpiando el prefijo "id" del campo ID
+func (m Municipio) CodigoINE() string {
+	if len(m.ID) > 2 && m.ID[:2] == "id" {
+		return m.ID[2:]
+	}
+	if len(m.IDOld) == 5 {
+		return m.IDOld
+	}
+	return m.ID
+}
