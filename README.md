@@ -28,7 +28,9 @@ La clave se puede configurar de dos formas:
   * 📍 **Per Municipi:** Búsqueda rápida y sincronizada por **Nombre** o **Código INE/AEMET**.
   * ⚡ **Mode PRO:** Filtro jerárquico masivo con selección en cascada por **Comunidades Autónomas y Provincias**.
 * ⚡ **Consultas concurrentes:** Descargas asíncronas optimizadas mediante Goroutines y semáforos de red.
-* 💾 **Persistencia de datos:** Guardado automático del estado de cada casilla y municipio mediante preferencias locales y SQLite.
+* 💾 **Persistencia y caché local eficiente:** 
+  * Guardado automático del estado de cada casilla y municipio mediante preferencias locales y SQLite.
+  * Sistema de **caché local en disco** (`municipios_cache.json`) para la lista de maestros de AEMET, reduciendo la latencia de inicio y garantizando protección contra límites de tasa de peticiones (HTTP 429).
 * 🎨 **Interfaz adaptable:** Diseñada con la librería gráfica Fyne (compatible con Windows, Linux, macOS y WebAssembly).
 
 ---
@@ -57,7 +59,7 @@ La clave se puede configurar de dos formas:
 * **`geo_utm.go`**: Módulo geodésico matemático para la conversión de coordenadas UTM (Huso 30N) a WGS84.
 * **`clima-valors.go`**: Peticiones HTTP a AEMET y procesado de predicciones (`GetPrediccions`, `GetPreUrl`, `GetPrediccio`).
 * **`clima-text.go`**: Formateo e interpretación de los datos del clima para las etiquetas textuales.
-* **`aemet_maestros.go`**: Descarga, filtrado y mapeo del listado general de municipios españoles.
+* **`aemet_maestros.go`**: Descarga, filtrado, mapeo de CCAA y gestión de la caché local en disco (`municipios_cache.json`) del listado general de municipios españoles.
 * **`aemet-client.go`**: Cliente HTTP auxiliar para la conexión con las APIs externas.
 * **`pronostic-pestanya.go`**: Renderizado de la pestaña visual del tiempo (gráfico de Meteoblue).
 
