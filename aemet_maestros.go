@@ -32,13 +32,46 @@ var MapaCCAA = map[string]string{
 	"49": "Castilla y León", "50": "Aragón", "51": "Ceuta", "52": "Melilla",
 }
 
+// Mapa de relació entre els 2 primers dígits del codi INE i la Província
+var MapaProvincias = map[string]string{
+	"01": "Araba/Álava", "02": "Albacete", "03": "Alicante/Alacant", "04": "Almería",
+	"05": "Ávila", "06": "Badajoz", "07": "Illes Balears", "08": "Barcelona",
+	"09": "Burgos", "10": "Cáceres", "11": "Cádiz", "12": "Castellón/Castelló",
+	"13": "Ciudad Real", "14": "Córdoba", "15": "A Coruña", "16": "Cuenca",
+	"17": "Girona", "18": "Granada", "19": "Guadalajara", "20": "Gipuzkoa",
+	"21": "Huelva", "22": "Huesca", "23": "Jaén", "24": "León",
+	"25": "Lleida", "26": "La Rioja", "27": "Lugo", "28": "Madrid",
+	"29": "Málaga", "30": "Murcia", "31": "Navarra", "32": "Ourense",
+	"33": "Asturias", "34": "Palencia", "35": "Las Palmas", "36": "Pontevedra",
+	"37": "Salamanca", "38": "Santa Cruz de Tenerife", "39": "Cantabria", "40": "Segovia",
+	"41": "Sevilla", "42": "Soria", "43": "Tarragona", "44": "Teruel",
+	"45": "Toledo", "46": "Valencia/València", "47": "Valladolid", "48": "Bizkaia",
+	"49": "Zamora", "50": "Zaragoza", "51": "Ceuta", "52": "Melilla",
+}
+
+// poblarCCAAiProvincia assigna la CCAA i Província en RAM a partir del codi INE
+func poblarCCAAiProvincia(municipis []Municipio) {
+	for i := range municipis {
+		if len(municipis[i].IDOld) >= 2 {
+			codiProv := municipis[i].IDOld[:2]
+			if ccaa, ok := MapaCCAA[codiProv]; ok {
+				municipis[i].CCAA = ccaa
+			}
+			if prov, ok := MapaProvincias[codiProv]; ok {
+				municipis[i].Provincia = prov
+			}
+		}
+	}
+}
+
 // ObtenirMunicipiosAEMET és un mètode de (*Config)
 func (app *Config) ObtenirMunicipiosAEMET() ([]Municipio, error) {
-	// 0. Intentar carregar des del fitxer de memòria cau local (evita crides HTTP a AEMET)
+	// 0. Intentar carregar des del fitxer de memòria cau local
 	if data, err := os.ReadFile(municipiosCacheFile); err == nil {
 		var municipiosCache []Municipio
 		if err := json.Unmarshal(data, &municipiosCache); err == nil && len(municipiosCache) > 0 {
-			log.Println("[AEMET LOG] Carregats", len(municipiosCache), "municipis des del fitxer local en disc.")
+			poblarCCAAiProvincia(municipiosCache)
+			log.Println("[AEMET LOG] Carregats i poblats", len(municipiosCache), "municipis des del fitxer local en disc.")
 			return municipiosCache, nil
 		}
 	}
@@ -108,15 +141,8 @@ func (app *Config) ObtenirMunicipiosAEMET() ([]Municipio, error) {
 		return nil, fmt.Errorf("error processant la llista de municipis: %w", err)
 	}
 
-	// 4. Mapear CCAA a cada municipio usando los 2 primeros dígitos de IDOld (Código INE)
-	for i := range municipios {
-		if len(municipios[i].IDOld) >= 2 {
-			codiProv := municipios[i].IDOld[:2]
-			if ccaa, ok := MapaCCAA[codiProv]; ok {
-				municipios[i].CCAA = ccaa
-			}
-		}
-	}
+	// 4. Mapear CCAA y Provincia a cada municipio usando los 2 primeros dígitos de IDOld
+	poblarCCAAiProvincia(municipios)
 
 	// 5. Desat en disc per a no tornar a fer crides HTTP en futurs arrancs
 	if cacheData, err := json.Marshal(municipios); err == nil {
