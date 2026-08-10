@@ -3,127 +3,167 @@ package main
 import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 )
 
-// buildPestanyaModePro retorna la vista i el callback de guardat per a toolbar-mostrarPreferencies.go
-func (cfg *Config) buildPestanyaModePro() (fyne.CanvasObject, func()) {
+// buildPestanyaModePro retorna la vista i el callback de guardat
+func (cfg *Config) buildPestanyaModePro(win fyne.Window) (fyne.CanvasObject, func()) {
 	apiKeyEntry := widget.NewEntry()
 	apiKeyEntry.SetPlaceHolder("Enganxa la teva AEMET API Key aquí...")
 	apiKeyEntry.SetText(cfg.apiKey)
 
+	lblResum := widget.NewLabel("")
+	cfg.actualitzarLabelResum(lblResum)
+
+	btnVeureDetall := widget.NewButtonWithIcon("Veure selecció", theme.InfoIcon(), func() {
+		cfg.obrirDialogDetallSeleccio(win)
+	})
+
+	barraInferior := container.NewBorder(nil, nil, lblResum, btnVeureDetall)
+
 	var treeContainer fyne.CanvasObject
 
-	// 1. Verificar si hi ha municipis en la memòria RAM (cfg.Municipis)
 	if len(cfg.Municipis) == 0 {
 		treeContainer = container.NewCenter(
 			widget.NewLabel("No hi ha municipis carregats en memòria.\nVés a la pestanya 'Per Municipi' i prem 'Carregar Municipis d'AEMET'."),
 		)
 	} else {
-		// Generar l'arbre utilitzant els municipis existents en RAM
 		tree, ccaaKeys := BuildCCAATree(cfg.Municipis)
-		treeContainer = cfg.buildHierarchyTreeUI(tree, ccaaKeys)
+		treeContainer = cfg.buildHierarchyTreeUI(tree, ccaaKeys, func() {
+			cfg.actualitzarLabelResum(lblResum)
+		})
 	}
 
 	scrollTree := container.NewVScroll(treeContainer)
 	scrollTree.SetMinSize(fyne.NewSize(400, 250))
 
-	// 2. Funció de guardat devuelta a toolbar-mostrarPreferencies.go
 	saveFunc := func() {
 		cfg.apiKey = apiKeyEntry.Text
+		cfg.guardarUserConfigDisc()
 	}
 
-	view := container.NewVBox(
+	topSection := container.NewVBox(
 		widget.NewLabelWithStyle("AEMET API Key:", fyne.TextAlignLeading, fyne.TextStyle{Bold: true}),
 		apiKeyEntry,
 		widget.NewSeparator(),
 		widget.NewLabelWithStyle("Filtre Jeràrquic (Autonomies / Províncies / Municipis):", fyne.TextAlignLeading, fyne.TextStyle{Bold: true}),
-		scrollTree,
 	)
 
-	return view, saveFunc
+	return container.NewBorder(topSection, barraInferior, nil, nil, scrollTree), saveFunc
 }
 
 // buildHierarchyTreeUI genera les caselles de verificació i enllaça els esdeveniments
-func (cfg *Config) buildHierarchyTreeUI(tree CCAATree, ccaaKeys []string) fyne.CanvasObject {
+func (cfg *Config) buildHierarchyTreeUI(tree CCAATree, ccaaKeys []string, onSelectionChanged func()) fyne.CanvasObject {
 	treeContainer := container.NewVBox()
+
+	provMap := make(map[string][]string)
+	for _, m := range cfg.Municipis {
+		provMap[m.Provincia] = append(provMap[m.Provincia], m.CodigoINE())
+	}
+
+	selectedSet := make(map[string]bool)
+	for _, codi := range cfg.UserConfig.Municipios {
+		selectedSet[codi] = true
+	}
+
 	chkAll := widget.NewCheck("Seleccionar tota Espanya", nil)
 	treeContainer.Add(chkAll)
 
 	var allProvChecks []*widget.Check
 	ccaaCheckboxes := make(map[string]*widget.Check)
 	provCheckboxes := make(map[string][]*widget.Check)
-
-	// Bandera de control (guard) per evitar bucles d'esdeveniments en cascada
 	var isUpdating bool
 
-	// 1. Construcció de la interfície i associació d'esdeveniments
+	allProvsCheckedInitial := true
+
 	for _, ccaa := range ccaaKeys {
 		chkCCAA := widget.NewCheck(ccaa, nil)
 		ccaaCheckboxes[ccaa] = chkCCAA
 		treeContainer.Add(chkCCAA)
 
+		allProvsInCCAAChecked := true
+
 		for _, prov := range tree[ccaa] {
 			chkProv := widget.NewCheck("   - "+prov+" (Tots els municipis)", nil)
-			setupProvinciaCheck(chkProv, chkAll, &isUpdating)
+			provSelected := cfg.isProvinciaSeleccionada(prov, provMap, selectedSet)
+			if !provSelected {
+				allProvsInCCAAChecked = false
+				allProvsCheckedInitial = false
+			}
+			chkProv.SetChecked(provSelected)
 
 			provCheckboxes[ccaa] = append(provCheckboxes[ccaa], chkProv)
 			allProvChecks = append(allProvChecks, chkProv)
 			treeContainer.Add(chkProv)
+
+			currentProv := prov
+			chkProv.OnChanged = func(val bool) {
+				if isUpdating {
+					return
+				}
+				cfg.actualitzarMunicipisProvincia(currentProv, val, provMap)
+
+				isUpdating = true
+				if !val {
+					chkCCAA.SetChecked(false)
+					chkAll.SetChecked(false)
+				}
+				isUpdating = false
+
+				if onSelectionChanged != nil {
+					onSelectionChanged()
+				}
+			}
 		}
 
-		setupCCAACheck(chkCCAA, provCheckboxes[ccaa], chkAll, &isUpdating)
+		chkCCAA.SetChecked(allProvsInCCAAChecked)
+
+		currentCCAA := ccaa
+		chkCCAA.OnChanged = func(val bool) {
+			if isUpdating {
+				return
+			}
+			isUpdating = true
+			for _, chkP := range provCheckboxes[currentCCAA] {
+				chkP.SetChecked(val)
+			}
+			for _, provName := range tree[currentCCAA] {
+				cfg.actualitzarMunicipisProvincia(provName, val, provMap)
+			}
+			if !val {
+				chkAll.SetChecked(false)
+			}
+			isUpdating = false
+
+			if onSelectionChanged != nil {
+				onSelectionChanged()
+			}
+		}
 	}
 
-	// 2. Esdeveniment global per a la casella de tot el país
-	setupNacionalCheck(chkAll, ccaaCheckboxes, allProvChecks, &isUpdating)
+	chkAll.SetChecked(allProvsCheckedInitial && len(ccaaKeys) > 0)
 
-	return treeContainer
-}
-
-// --- FUNCIONS AUXILIARS DE GESTIÓ D'ESDEVENIMENTS (CLEAN CODE) ---
-
-func setupProvinciaCheck(chkProv *widget.Check, chkAll *widget.Check, isUpdating *bool) {
-	chkProv.OnChanged = func(val bool) {
-		if *isUpdating {
-			return
-		}
-		if !val {
-			*isUpdating = true
-			chkAll.SetChecked(false)
-			*isUpdating = false
-		}
-	}
-}
-
-func setupCCAACheck(chkCCAA *widget.Check, provs []*widget.Check, chkAll *widget.Check, isUpdating *bool) {
-	chkCCAA.OnChanged = func(val bool) {
-		if *isUpdating {
-			return
-		}
-		*isUpdating = true
-		for _, chkP := range provs {
-			chkP.SetChecked(val)
-		}
-		if !val {
-			chkAll.SetChecked(false)
-		}
-		*isUpdating = false
-	}
-}
-
-func setupNacionalCheck(chkAll *widget.Check, ccaaChecks map[string]*widget.Check, allProvs []*widget.Check, isUpdating *bool) {
 	chkAll.OnChanged = func(val bool) {
-		if *isUpdating {
+		if isUpdating {
 			return
 		}
-		*isUpdating = true
-		for _, chkC := range ccaaChecks {
+		isUpdating = true
+		for _, chkC := range ccaaCheckboxes {
 			chkC.SetChecked(val)
 		}
-		for _, chkP := range allProvs {
+		for _, chkP := range allProvChecks {
 			chkP.SetChecked(val)
 		}
-		*isUpdating = false
+		for provName := range provMap {
+			cfg.actualitzarMunicipisProvincia(provName, val, provMap)
+		}
+		isUpdating = false
+
+		if onSelectionChanged != nil {
+			onSelectionChanged()
+		}
 	}
+
+	return treeContainer
 }
