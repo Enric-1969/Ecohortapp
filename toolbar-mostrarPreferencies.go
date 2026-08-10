@@ -12,8 +12,7 @@ import (
 
 func (cfg *Config) mostrarPreferencies(win fyne.Window) dialog.Dialog {
 	vistaMunicipi := cfg.buildPestanyaMunicipi(win)
-	vistaModePro, guardarPreferenciesPro := cfg.buildPestanyaModePro()
-
+	vistaModePro, guardarPreferenciesPro := cfg.buildPestanyaModePro(win)
 	pestanyes := container.NewAppTabs(
 		container.NewTabItem("Per Municipi", vistaMunicipi),
 		container.NewTabItem("Mode PRO", vistaModePro),
