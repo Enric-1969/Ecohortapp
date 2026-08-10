@@ -4,13 +4,25 @@ import (
 	"time"
 
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/theme"
 )
 
 func (app *Config) makeUI() {
-	// Obtenir les dades de l'API (Precipitacions, Temp. Max/Min i Humitat)
-	precipitacio, tempMax, tempMin, humitat := app.getClimaText()
+	// Obtenir les dades de l'API (Precipitacions, Temp. Max/Min i Humitat) i el possible error
+	precipitacio, tempMax, tempMin, humitat, err := app.getClimaText()
+	if err != nil && app.ErrorLog != nil {
+		app.ErrorLog.Printf("[AEMET WARNING] Error inicial en carregar clima: %v", err)
+	}
+
+	// Protecció en cas que fos nil en el primer arrencada sense connexió
+	if precipitacio == nil {
+		precipitacio = canvas.NewText("Precipitació: --", theme.ForegroundColor())
+		tempMax = canvas.NewText("Temp. Max: --", theme.ForegroundColor())
+		tempMin = canvas.NewText("Temp. Min: --", theme.ForegroundColor())
+		humitat = canvas.NewText("Humitat: --", theme.ForegroundColor())
+	}
 
 	climaDadesContent := container.NewGridWithColumns(4,
 		precipitacio,
@@ -59,8 +71,18 @@ func (app *Config) actualitzarClimaDadesContent() {
 		app.InfoLog.Print("actualitzar les dades meteorològiques")
 	}
 
-	precipitacio, tempMax, tempMin, humitat := app.getClimaText()
+	// Capturem les etiquetes I l'error de la petició
+	precipitacio, tempMax, tempMin, humitat, err := app.getClimaText()
 
+	// SI HI HA UN ERROR (ex: HTTP 429 de límit d'AEMET), NO toquem el contenidor visual
+	if err != nil {
+		if app.ErrorLog != nil {
+			app.ErrorLog.Printf("[AEMET WARNING] Error en actualitzar clima (%v). Mantenint dades anteriors.", err)
+		}
+		return // Sortim de la funció sense modificar ClimaDadesContainer
+	}
+
+	// Només si NO hi ha error, actualitzem la interfície amb les noves dades
 	if app.ClimaDadesContainer != nil {
 		app.ClimaDadesContainer.Objects = []fyne.CanvasObject{precipitacio, tempMax, tempMin, humitat}
 		app.ClimaDadesContainer.Refresh()
