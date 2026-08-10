@@ -44,7 +44,7 @@ func (cfg *Config) buildPestanyaModePro() (fyne.CanvasObject, func()) {
 	return view, saveFunc
 }
 
-// buildHierarchyTreeUI genera les caselles de verificació a la interfície
+// buildHierarchyTreeUI genera les caselles de verificació i enllaça els esdeveniments
 func (cfg *Config) buildHierarchyTreeUI(tree CCAATree, ccaaKeys []string) fyne.CanvasObject {
 	treeContainer := container.NewVBox()
 	chkAll := widget.NewCheck("Seleccionar tota Espanya", nil)
@@ -54,9 +54,10 @@ func (cfg *Config) buildHierarchyTreeUI(tree CCAATree, ccaaKeys []string) fyne.C
 	ccaaCheckboxes := make(map[string]*widget.Check)
 	provCheckboxes := make(map[string][]*widget.Check)
 
-	// Bandera de control (guard) per evitar bucles d'esdeveniments en cascada a Fyne
+	// Bandera de control (guard) per evitar bucles d'esdeveniments en cascada
 	var isUpdating bool
 
+	// 1. Construcció de la interfície i associació d'esdeveniments
 	for _, ccaa := range ccaaKeys {
 		chkCCAA := widget.NewCheck(ccaa, nil)
 		ccaaCheckboxes[ccaa] = chkCCAA
@@ -64,52 +65,65 @@ func (cfg *Config) buildHierarchyTreeUI(tree CCAATree, ccaaKeys []string) fyne.C
 
 		for _, prov := range tree[ccaa] {
 			chkProv := widget.NewCheck("   - "+prov+" (Tots els municipis)", nil)
-
-			chkProv.OnChanged = func(val bool) {
-				if isUpdating {
-					return
-				}
-				if !val {
-					isUpdating = true
-					chkAll.SetChecked(false)
-					isUpdating = false
-				}
-			}
+			setupProvinciaCheck(chkProv, chkAll, &isUpdating)
 
 			provCheckboxes[ccaa] = append(provCheckboxes[ccaa], chkProv)
 			allProvChecks = append(allProvChecks, chkProv)
 			treeContainer.Add(chkProv)
 		}
 
-		currentCCAA := ccaa
-		chkCCAA.OnChanged = func(val bool) {
-			if isUpdating {
-				return
-			}
-			isUpdating = true
-			for _, chkP := range provCheckboxes[currentCCAA] {
-				chkP.SetChecked(val)
-			}
-			if !val {
-				chkAll.SetChecked(false)
-			}
-			isUpdating = false
-		}
+		setupCCAACheck(chkCCAA, provCheckboxes[ccaa], chkAll, &isUpdating)
 	}
 
-	chkAll.OnChanged = func(val bool) {
-		if isUpdating {
-			return
-		}
-		isUpdating = true
-		for _, chkC := range ccaaCheckboxes {
-			chkC.SetChecked(val)
-		}
-		for _, chkP := range allProvChecks {
-			chkP.SetChecked(val)
-		}
-		isUpdating = false
-	}
+	// 2. Esdeveniment global per a la casella de tot el país
+	setupNacionalCheck(chkAll, ccaaCheckboxes, allProvChecks, &isUpdating)
 
 	return treeContainer
+}
+
+// --- FUNCIONS AUXILIARS DE GESTIÓ D'ESDEVENIMENTS (CLEAN CODE) ---
+
+func setupProvinciaCheck(chkProv *widget.Check, chkAll *widget.Check, isUpdating *bool) {
+	chkProv.OnChanged = func(val bool) {
+		if *isUpdating {
+			return
+		}
+		if !val {
+			*isUpdating = true
+			chkAll.SetChecked(false)
+			*isUpdating = false
+		}
+	}
+}
+
+func setupCCAACheck(chkCCAA *widget.Check, provs []*widget.Check, chkAll *widget.Check, isUpdating *bool) {
+	chkCCAA.OnChanged = func(val bool) {
+		if *isUpdating {
+			return
+		}
+		*isUpdating = true
+		for _, chkP := range provs {
+			chkP.SetChecked(val)
+		}
+		if !val {
+			chkAll.SetChecked(false)
+		}
+		*isUpdating = false
+	}
+}
+
+func setupNacionalCheck(chkAll *widget.Check, ccaaChecks map[string]*widget.Check, allProvs []*widget.Check, isUpdating *bool) {
+	chkAll.OnChanged = func(val bool) {
+		if *isUpdating {
+			return
+		}
+		*isUpdating = true
+		for _, chkC := range ccaaChecks {
+			chkC.SetChecked(val)
+		}
+		for _, chkP := range allProvs {
+			chkP.SetChecked(val)
+		}
+		*isUpdating = false
+	}
 }
