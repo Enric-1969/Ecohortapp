@@ -52,7 +52,8 @@ func (app *Config) buildPestanyaMunicipi(win fyne.Window) fyne.CanvasObject {
 
 		for _, m := range app.Municipis {
 			if m.CCAA == ccaaSeleccionada {
-				nomClau := fmt.Sprintf("%s (%s)", m.Nombre, m.IDOld)
+				codiINE := m.CodigoINE()
+				nomClau := fmt.Sprintf("%s (%s)", m.Nombre, codiINE)
 				opcionsMunicipis = append(opcionsMunicipis, nomClau)
 				municipisPerNom[nomClau] = m
 			}
@@ -66,12 +67,13 @@ func (app *Config) buildPestanyaMunicipi(win fyne.Window) fyne.CanvasObject {
 
 	selectMunicipi.OnChanged = func(municipiSeleccionat string) {
 		if m, ok := municipisPerNom[municipiSeleccionat]; ok {
-			app.UserConfig.MunicipioCodigo = m.IDOld
+			codiINE := m.CodigoINE()
+			app.UserConfig.MunicipioCodigo = codiINE
 			app.UserConfig.MunicipioNombre = m.Nombre
 			app.UserConfig.Latitud = parseAEMETCoord(m.Latitude)
 			app.UserConfig.Longitud = parseAEMETCoord(m.Longitude)
 
-			app.municipi = m.IDOld
+			app.municipi = codiINE
 		}
 	}
 
