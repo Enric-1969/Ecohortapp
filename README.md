@@ -101,41 +101,35 @@ Almacena las predicciones meteorológicas diarias de AEMET:
 
 ### 1. Flujo de Consulta Meteorológica Individual (Pestaña Municipi)
 
-```mermaid
-graph LR
-    A[Usuario selecciona Municipio] --> B[toolbar-buildPestanyaMunicipi.go]
-    B --> C[clima-valors.go]
-    C -->|Petición HTTP| D[API AEMET]
-    D -->|JSON respuesta| C
-    C -->|Parsea a struct Diaria| E[structApp.go]
-    E --> F[clima-text.go]
-    F -->|Texto formateado| G[ui.go]
-    G -->|Refresca pantalla| H[Interfaz Fyne]
-```
+1. **`toolbar-buildPestanyaMunicipi.go`**: El usuario selecciona una CCAA, provincia y municipio en los desplegables de la interfaz.
+2. **`toolbar-buildPestanyaMunicipi.go`**: Captura el código INE del municipio seleccionado y activa la orden de búsqueda.
+3. **`clima-valors.go`**: Construye la URL con la API Key y realiza la petición HTTP a la API de AEMET.
+4. **API AEMET**: Servidor externo que procesa la petición y devuelve la respuesta con los datos meteorológicos en formato JSON.
+5. **`structApp.go`**: Recibe el JSON y lo transforma a la estructura de datos interna `Diaria` de Go.
+6. **`clima-text.go`**: Traduce los datos numéricos (grados, lluvia, viento) a textos claros y legibles para el usuario.
+7. **`ui.go`**: Recibe el texto formateado y actualiza la vista principal mediante `actualitzarClimaDadesContent`.
+8. **Interfaz Fyne**: Muestra los datos del tiempo actualizados en la ventana de la aplicación.
+
+---
 
 ### 2. Flujo de Descarga Masiva (Mode PRO)
 
-```mermaid
-graph TD
-    A[Selección CCAA / Provincia] --> B[toolbar-buildPestanyaModePro.go]
-    B --> C[mode_pro_logic.go: BuildCCAATree]
-    C --> D[Usuario pulsa 'Descargar']
-    D --> E[mode_pro_logic.go: ExecutarDescargaModePro]
-    E -->|Descarga AEMET| F[clima-valors.go / AEMET API]
-    F -->|Predicciones obtenidas| G[mode_pro_state.go]
-    G -->|Muestra resultados| H[mode_pro_resum.go]
-```
+1. **`toolbar-buildPestanyaModePro.go`**: El usuario marca en las casillas las CCAA o Provincias que desea descargar.
+2. **`mode_pro_logic.go` (`BuildCCAATree`)**: Construye la estructura en árbol relacionando cada región con sus municipios.
+3. **`mode_pro_logic.go` (`ExecutarDescargaModePro`)**: Al pulsar "Descargar", inicia las peticiones masivas en segundo plano mediante goroutines.
+4. **`clima-valors.go` / API AEMET**: Descarga concurrentemente la predicción de todos los municipios seleccionados.
+5. **`mode_pro_state.go`**: Mantiene en memoria RAM el progreso y resultado de cada descarga.
+6. **`mode_pro_resum.go`**: Muestra la pantalla de resumen con el desglose final de datos descargados.
+
+---
 
 ### 3. Flujo de Gestión Manual (CRUD Registres)
 
-```mermaid
-graph LR
-    A[Formulario Agregar/Editar] --> B[toolbar-addRegistresDialog.go]
-    B --> C[registre-pestanya.go]
-    C -->|Insert / Update / Delete| D[repository/db-sqlite.go]
-    D -->|SQL Exec| E[(Tabla registres en SQLite)]
-    E -->|Refresco de datos| C
-```
+1. **`toolbar-addRegistresDialog.go`**: El usuario introduce o edita datos de clima (lluvia, temperatura, humedad) en el formulario modal.
+2. **`registre-pestanya.go`**: Valida los datos y determina si se crea, edita o elimina un registro.
+3. **`repository/db-sqlite.go`**: Traduce la orden a SQL (`INSERT`, `UPDATE`, `DELETE`) y la ejecuta en la base de datos local.
+4. **Tabla `registres` (SQLite)**: Guarda los cambios permanentemente en el disco duro.
+5. **`registre-pestanya.go`**: Vuelve a consultar la base de datos y actualiza la tabla en pantalla.
 
 ---
 
@@ -153,9 +147,8 @@ Ejecuta la aplicación desde la terminal con:
 
 ```bash
 go run .
-```
 
----
+![Interfaz de EcoHortApp](EcoHortApp.png)
 
 ## 📦 Compilación
 
