@@ -78,10 +78,11 @@ Almacena las predicciones meteorológicas diarias de AEMET:
 ### 🌤️ Servicio Meteorológico, Geodesia & Gráficos
 * **`coord_parser.go`**: Parser multiformato para procesar y validar cadenas de coordenadas geográficas de AEMET.
 * **`geo_utm.go`**: Módulo geodésico matemático para la conversión de coordenadas UTM (Huso 30N) a WGS84.
-* **`clima-valors.go`**: Peticiones HTTP a AEMET y procesado de predicciones (`GetPrediccions`, `GetPreUrl`, `GetPrediccio`).
+* **`clima-valors.go`**: Consultes a l'API d'AEMET per a prediccions diàries i l'obtenció d'avisos meteorològics actius.
 * **`clima-text.go`**: Formateo e interpretación de los datos del clima para las etiquetas textuales.
 * **`aemet_maestros.go`**: Descarga, filtrado, mapeo de CCAA y gestión de la caché local en disco (`municipios_cache.json`).
 * **`aemet-client.go`**: Cliente HTTP auxiliar para la conexión con las APIs externas.
+* **`banner-alerta.go`**: Component visual (UI) encarregat de generar el bàner dinàmic d'alertes meteorològiques (AEMET CAP).
 * **`pronostic-pestanya.go`**: Renderizado de la pestaña visual del tiempo (gráfico de Meteoblue).
 
 ### 🛠️ Componentes de Mode PRO e Interfaz
@@ -131,6 +132,14 @@ Almacena las predicciones meteorológicas diarias de AEMET:
 4. **Tabla `registres` (SQLite)**: Guarda los cambios permanentemente en el disco duro.
 5. **`registre-pestanya.go`**: Vuelve a consultar la base de datos y actualiza la tabla en pantalla.
 
+---
+
+### 4. Flujo de Consultas de Alertas y Banner Meteorológico (AEMET CAP)
+
+1. **`pronostic-pestanya.go` (`actualitzarGraficPronostic`)**: Lee el código INE del municipio activo desde `app.UserConfig.MunicipioCodigo`.
+2. **`clima-valors.go` (`ObtenirAlertaActual`)**: Consulta el endpoint CAP de AEMET para verificar si hay avisos meteorológicos activos para ese municipio.
+3. **`banner-alerta.go` (`crearBannerAlerta`)**: Genera el widget visual del banner adaptando su color e icono según el nivel de alerta (Verde, Amarillo, Naranja, Rojo).
+4. **`pronostic-pestanya.go`**: Superpone el banner sobre la imagen del gráfico y refresca el contenedor principal (`PronosticGraficContainer`) en la ventana.
 ---
 
 ## 🛠️ Requisitos e Instalación
