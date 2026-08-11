@@ -15,9 +15,10 @@ import (
 )
 
 func (app *Config) pronosticTab() *fyne.Container {
+	banner := app.crearBannerAlerta("verde", "")
 	grafic := app.obtenirGrafic()
 
-	graficContainer := container.NewVBox(grafic)
+	graficContainer := container.NewVBox(banner, grafic)
 	scrollContainer := container.NewVScroll(graficContainer)
 
 	app.PronosticGraficContainer = graficContainer
@@ -28,7 +29,6 @@ func (app *Config) pronosticTab() *fyne.Container {
 func (app *Config) obtenirGrafic() *canvas.Image {
 	apiKey := "zpPLdN8ijMAacbGX"
 
-	// Coordenadas
 	lat := app.UserConfig.Latitud
 	lon := app.UserConfig.Longitud
 
@@ -47,7 +47,6 @@ func (app *Config) obtenirGrafic() *canvas.Image {
 	}
 	nomMunicipi = strings.TrimSpace(nomMunicipi)
 
-	// URL con todos los parámetros requeridos por Meteoblue
 	apiURL := fmt.Sprintf(
 		"https://my.meteoblue.com/images/meteogram?lat=%.4f&lon=%.4f&asl=100&tz=Europe%%2FMadrid&apikey=%s&format=png&dpi=72&lang=es&temperature_units=C&precipitation_units=mm&windspeed_units=kmh&location_name=%s",
 		lat,
@@ -77,8 +76,20 @@ func (app *Config) actualitzarGraficPronostic() {
 		return
 	}
 
+	// 1. Leemos el código INE del municipio desde UserConfig
+	codi := app.UserConfig.MunicipioCodigo
+	if codi == "" {
+		codi = "esp"
+	}
+
+	// 2. Consultamos la alerta para ese municipio concreto
+	nivel, msg := app.ObtenirAlertaActual(codi)
+
+	// 3. Generamos componentes y actualizamos pantalla
+	banner := app.crearBannerAlerta(nivel, msg)
 	nouGrafic := app.obtenirGrafic()
-	app.PronosticGraficContainer.Objects = []fyne.CanvasObject{nouGrafic}
+
+	app.PronosticGraficContainer.Objects = []fyne.CanvasObject{banner, nouGrafic}
 	app.PronosticGraficContainer.Refresh()
 }
 
@@ -101,7 +112,6 @@ func (app *Config) descarregarArxiu(URL string, nomArxiu string) error {
 		return err
 	}
 
-	// Si el servidor no responde 200 OK, imprimimos el mensaje exacto que nos envía Meteoblue
 	if response.StatusCode != 200 {
 		return fmt.Errorf("error HTTP %d al descarregar la imatge. Resposta de Meteoblue: %s", response.StatusCode, string(b))
 	}
