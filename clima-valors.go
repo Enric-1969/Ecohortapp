@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/joho/godotenv"
@@ -131,4 +132,87 @@ func GetPrediccio(url string) (*Diaria, error) {
 	}
 
 	return &currentInfo, nil
+}
+
+// GetAvisosCAPUrl obtiene la URL temporal de AEMET para consultar los avisos de un área
+func GetAvisosCAPUrl(area string) (string, error) {
+	if area == "" {
+		area = "esp"
+	}
+
+	url := fmt.Sprintf("https://opendata.aemet.es/opendata/api/avisos_cap/ultimoelaborado/area/%s/?api_key=%s", area, apiKey)
+
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return "", fmt.Errorf("error creant la petició HTTP: %w", err)
+	}
+
+	req.Header.Add("cache-control", "no-cache")
+	req.Header.Set("User-Agent", "EcoHortApp/1.0 (ecohortapp@cibernarium.cat)")
+
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		log.Println("error contactant amb aemet.es", err)
+		return "", err
+	}
+	defer res.Body.Close()
+
+	body, err := io.ReadAll(res.Body)
+	if err != nil {
+		return "", err
+	}
+
+	var preUrl PreUrl
+	if err := json.Unmarshal(body, &preUrl); err != nil {
+		return "", err
+	}
+
+	if preUrl.Url == "" {
+		return "", fmt.Errorf("AEMET no ha retornat URL d'avisos")
+	}
+
+	return preUrl.Url, nil
+}
+
+// GetAvisosCAP descarga los datos del aviso desde la URL devuelta por AEMET
+func GetAvisosCAP(url string) ([]byte, error) {
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("cache-control", "no-cache")
+	req.Header.Set("User-Agent", "EcoHortApp/1.0 (ecohortapp@cibernarium.cat)")
+
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer res.Body.Close()
+
+	return io.ReadAll(res.Body)
+}
+
+// ObtenirAlertaActual conecta ambas llamadas y devuelve el nivel y el mensaje para el banner
+func (app *Config) ObtenirAlertaActual(area string) (string, string) {
+	url, err := GetAvisosCAPUrl(area)
+	if err != nil {
+		return "verde", ""
+	}
+
+	body, err := GetAvisosCAP(url)
+	if err != nil || len(body) == 0 {
+		return "verde", ""
+	}
+
+	strBody := string(body)
+	if strings.Contains(strBody, "rojo") {
+		return "rojo", "Risc extrem per fenòmens meteorològics adversos"
+	} else if strings.Contains(strBody, "naranja") {
+		return "naranja", "Risc important per temps advers a la zona"
+	} else if strings.Contains(strBody, "amarillo") {
+		return "amarillo", "Atenció: Risc per fenòmens meteorològics locals"
+	}
+
+	return "verde", ""
 }
