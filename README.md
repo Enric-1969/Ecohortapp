@@ -67,6 +67,7 @@ Almacena las predicciones meteorológicas diarias de AEMET:
 ### 📌 Núcleo e Interfaz Principal
 * **`main.go`**: Punto de entrada e inicialización de la aplicación.
 * **`structApp.go`**: Definición centralizada de las estructuras de datos (`Config`, `UserConfig`, `Diaria`, `Municipio`, etc.).
+* **`logger.go`**: Configuración de logs en disco (app.log) y gestión centralizada de errores (trazas técnicas vs. alertas amigables para el usuario).
 * **`ui.go`**: Construcción del layout principal y orquestación del refresco de vistas (`actualitzarClimaDadesContent`).
 * **`config.go`**: Carga, guardado y persistencia de las preferencias de usuario (`config.json`).
 * **`db.go`**: Conexión e inicialización del controlador SQLite3.
