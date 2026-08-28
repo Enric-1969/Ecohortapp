@@ -3,14 +3,21 @@
 
 # Ejecutables de Go y compilados
 *.exe
-*.exe.
 *.dll
 *.so
 *.dylib
 ecohortapp
+
+# Base de datos local
+*.db
+*.sqlite
+*.sqlite3
+
+# Archivos de configuración, caché y logs locales
 config.json
 municipios_cache.json
 pronostic.png
+app.log
 
 # Archivos del sistema
 .DS_Store
