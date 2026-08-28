@@ -29,9 +29,14 @@ func main() {
 	fyneApp := app.NewWithID("cat.cibernarium.ecohortapp")
 	myApp.App = fyneApp
 
-	// 3. Crear logs de control
-	myApp.InfoLog = log.New(os.Stdout, "INFO\t", log.Ldate|log.Ltime)
-	myApp.ErrorLog = log.New(os.Stdout, "ERROR\t", log.Ldate|log.Lshortfile)
+	// 3. Crear archivo de logs en disco i configuració de loggers
+	logFile, err := os.OpenFile("app.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+	if err != nil {
+		logFile = os.Stdout // Si falla la creación del archivo, usa la consola como alternativa
+	}
+
+	myApp.InfoLog = log.New(logFile, "INFO\t", log.Ldate|log.Ltime)
+	myApp.ErrorLog = log.New(logFile, "ERROR\t", log.Ldate|log.Ltime|log.Lshortfile)
 
 	// 4. Connexió i configuració de la base de dades
 	sqlDB, err := myApp.connectSQL()
