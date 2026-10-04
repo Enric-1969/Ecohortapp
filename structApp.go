@@ -16,145 +16,146 @@ import (
 
 // Crearem un struct amb totes les configuracions que necessiti la nostre App
 type Config struct {
-	App                                fyne.App              //Definim que emprara Fyne per construir la GUI de l'App
-	InfoLog                            *log.Logger           //Definim un Log d'accions
-	ErrorLog                           *log.Logger           //Definim un Log d'errors
-	DB                                 repository.Repository //Definim la referencia a la conexió a SQLite
-	MainWindow                         fyne.Window           //Aqui enmagatzemem la referencia a certes arees de la ui per controlar les actualitzacions de les mateixes.
-	ClimaDadesContainer                *fyne.Container       //Guardem el contenidor de les dades del clima, referenciant el punter de memòria del contenidor de fyne.
-	PronosticGraficContainer           *fyne.Container       //Definim un camp a on enmagatzem el contenidor del gràfic de clima, que ara sera de tipus contenidor fyne
-	Registres                          [][]interface{}       //Per emmagatzemar el slice de slices en forma de interfície a on esta contingut les dades obtingudes de la bd
-	RegistresTable                     *widget.Table         //Per emmagatzemar la referencia al punter que correspon el widget de la Taula.
-	HTTPClient                         http.Client           //Afegim la referència al client http sence necessitat de invocar la llibreria
-	AfegirRegistresDataRegistreEntrada *widget.Entry         //Afegim la referencia a la entrada del valor data registre per a nous registres que guardem en la bd
-	AfegirRegistresPrecipitacioEntrada *widget.Entry         //Afegim la referencia a la entrada del valor precipitacio per a nous registres que guardem en la bd
-	AfegirRegistresTempMaximaEntrada   *widget.Entry         //Afegim la referencia a la entrada del valor tempMaxima per a nous registres que guardem en la bd
-	AfegirRegistresTempMinimaEntrada   *widget.Entry         //Afegim la referencia a la entrada del valor tempMinima per a nous registres que guardem en la bd
-	AfegirRegistresHumitatEntrada      *widget.Entry         //Afegim la referencia a la entrada del valor humitat per a nous registres que guardem en la bd
-	municipi                           string                //Afegim la referencia a aquest valor de configuració
-	apiKey                             string                //Afegim la referencia a aquest valor de configuració
-	UserConfig                         UserConfig
+	UserConfig                         UserConfig            // [64 bytes] Mapeo de la estructura de configuración interna del usuario
+	HTTPClient                         http.Client           // [32 bytes] Afegim la referència al client http sence necessitat de invocar la llibreria
+	Registres                          [][]interface{}       // [24 bytes] Per emmagatzemar el slice of slices en forma de interfície a on esta contingut les dades obtingudes de la bd
+	Municipis                          []Municipio           // [24 bytes] Slice que contiene la lista estructurada de municipios
+	App                                fyne.App              // [16 bytes] Definim que emprara Fyne per construir la GUI de l'App
+	DB                                 repository.Repository // [16 bytes] Definim la referencia a la conexió a SQLite
+	MainWindow                         fyne.Window           // [16 bytes] Aqui enmagatzemem la referencia a certes arees de la ui per controlar les actualitzacions de les mateixes.
+	municipi                           string                // [16 bytes] Afegim la referencia a aquest valor de configuració
+	apiKey                             string                // [16 bytes] Afegim la referencia a aquest valor de configuració
+	InfoLog                            *log.Logger           // [8 bytes] Definim un Log d'accions
+	ErrorLog                           *log.Logger           // [8 bytes] Definim un Log d'errors
+	ClimaDadesContainer                *fyne.Container       // [8 bytes] Guardem el contenidor de les dades del clima, referenciant el punter de memòria del contenidor de fyne.
+	PronosticGraficContainer           *fyne.Container       // [8 bytes] Definim un camp a on enmagatzem el contenidor del gràfic de clima, que ara sera de tipus contenidor fyne
+	RegistresTable                     *widget.Table         // [8 bytes] Per emmagatzemar la referencia al punter que correspon el widget de la Taula.
+	AfegirRegistresDataRegistreEntrada *widget.Entry         // [8 bytes] Afegim la referencia a la entrada del valor data registre per a nous registres que guardem en la bd
+	AfegirRegistresPrecipitacioEntrada *widget.Entry         // [8 bytes] Afegim la referencia a la entrada del valor precipitacio per a nous registres que guardem en la bd
+	AfegirRegistresTempMaximaEntrada   *widget.Entry         // [8 bytes] Afegim la referencia a la entrada del valor tempMaxima per a nous registres que guardem en la bd
+	AfegirRegistresTempMinimaEntrada   *widget.Entry         // [8 bytes] Afegim la referencia a la entrada del valor tempMinima per a nous registres que guardem en la bd
+	AfegirRegistresHumitatEntrada      *widget.Entry         // [8 bytes] Afegim la referencia a la entrada del valor humitat per a nous registres que guardem en la bd
 
 	// CLEAN CODE: Estado centralizado de municipios cargados en RAM.
 	// Evita el uso de variables globales sueltas y permite compartir la lista
 	// entre pestañas de forma totalmente encapsulada y segura.
-	Municipis []Municipio
+
 }
 
 // Estructura per descodificar la primera resposta JSON de la API d'AEMET
 type AemetRespuestaAPI struct {
-	Descripcion string `json:"descripcion"`
-	Estado      int    `json:"estado"`
-	Datos       string `json:"datos"`
-	Metadatos   string `json:"metadatos"`
+	Descripcion string `json:"descripcion"` // [16 bytes] Cadena de texto informativa
+	Datos       string `json:"datos"`       // [16 bytes] URL con los datos del reporte
+	Metadatos   string `json:"metadatos"`   // [16 bytes] URL con la estructura de metadatos
+	Estado      int    `json:"estado"`      // [8 bytes] Código de estado numérico de la API
 }
 
 type Municipio struct {
-	ID        string `json:"id"`     // Ej: "id08001"
-	IDOld     string `json:"id_old"` // Ej: "08001" (Código INE de 5 dígitos)
-	Nombre    string `json:"nombre"` // Ej: "Abrera"
-	Longitude string `json:"longitud"`
-	Latitude  string `json:"latitud"`
-	Altitude  string `json:"altitud"`
-	Provincia string `json:"-"` // Calculado según los 2 primeros dígitos de IDOld
-	CCAA      string `json:"-"` // Calculado según la provincia
+	ID        string `json:"id"`       // [16 bytes] Ej: "id08001"
+	IDOld     string `json:"id_old"`   // [16 bytes] Ej: "08001" (Código INE de 5 dígitos)
+	Nombre    string `json:"nombre"`   // [16 bytes] Ej: "Abrera"
+	Longitude string `json:"longitud"` // [16 bytes] Coordenada de longitud en texto
+	Latitude  string `json:"latitud"`  // [16 bytes] Coordenada de latitud en texto
+	Altitude  string `json:"altitud"`  // [16 bytes] Altitud sobre el nivel del mar
+	Provincia string `json:"-"`        // [16 bytes] Calculado según los 2 primeros dígitos de IDOld
+	CCAA      string `json:"-"`        // [16 bytes] Calculado según la provincia
 }
 
 // UserConfig define las preferencias del usuario para config.json
 type UserConfig struct {
-	MunicipioCodigo string   `json:"municipio_codigo"`
-	MunicipioNombre string   `json:"municipio_nombre"`
-	Municipios      []string `json:"municipios"`
-	Latitud         float64  `json:"latitud"`
-	Longitud        float64  `json:"longitud"`
+	Municipios      []string `json:"municipios"`       // [24 bytes] Lista dinámica de favoritos guardados
+	MunicipioCodigo string   `json:"municipio_codigo"` // [16 bytes] Código identificador único
+	MunicipioNombre string   `json:"municipio_nombre"` // [16 bytes] Nombre legible del municipio
+	Latitud         float64  `json:"latitud"`          // [8 bytes] Coordenada decimal
+	Longitud        float64  `json:"longitud"`         // [8 bytes] Coordenada decimal
 }
 
 // Estructures del fitxers clima-valors.go
 type PreUrl struct {
-	Url    string       `json:"datos"` //Definim que el camp Url sera de tipus igual que el item "datos" del Json obtingut
-	Client *http.Client //Aquest camp ens servirà per quan realitzem testing, tindrem enmagatzemat aqui el tipus de crida que s'ha realitzat
+	Url    string       `json:"datos"` // [16 bytes] Definim que el camp Url sera de tipus igual que el item "datos" del Json obtingut
+	Client *http.Client // [8 bytes] Aquest camp ens servirà per quan realitzem testing, tindrem enmagatzemat aqui el tipus de crida que s'ha realitzat
 }
 
 type AutoGenerated []struct {
-	Origen     Origen     `json:"origen"`
-	Elaborado  string     `json:"elaborado"`
-	Nombre     string     `json:"nombre"`
-	Provincia  string     `json:"provincia"`
-	Prediccion Prediccion `json:"prediccion"`
-	ID         int        `json:"id"`
-	Version    float64    `json:"version"`
+	Origen     Origen     `json:"origen"`     // [96 bytes]
+	Prediccion Prediccion `json:"prediccion"` // [24 bytes]
+	Elaborado  string     `json:"elaborado"`  // [16 bytes]
+	Nombre     string     `json:"nombre"`     // [16 bytes]
+	Provincia  string     `json:"provincia"`  // [16 bytes]
+	ID         int        `json:"id"`         // [8 bytes]
+	Version    float64    `json:"version"`    // [8 bytes]
 }
 type Origen struct {
-	Productor string `json:"productor"`
-	Web       string `json:"web"`
-	Enlace    string `json:"enlace"`
-	Language  string `json:"language"`
-	Copyright string `json:"copyright"`
-	NotaLegal string `json:"notaLegal"`
+	Productor string `json:"productor"` // [16 bytes]
+	Web       string `json:"web"`       // [16 bytes]
+	Enlace    string `json:"enlace"`    // [16 bytes]
+	Language  string `json:"language"`  // [16 bytes]
+	Copyright string `json:"copyright"` // [16 bytes]
+	NotaLegal string `json:"notaLegal"` // [16 bytes]
 }
 type ProbPrecipitacion struct {
-	Value   int    `json:"value"`
-	Periodo string `json:"periodo"`
+	Periodo string `json:"periodo"` // [16 bytes]
+	Value   int    `json:"value"`   // [8 bytes]
 }
 type CotaNieveProv struct {
-	Value   string `json:"value"`
-	Periodo string `json:"periodo"`
+	Value   string `json:"value"`   // [16 bytes]
+	Periodo string `json:"periodo"` // [16 bytes]
 }
 type EstadoCielo struct {
-	Value       string `json:"value"`
-	Periodo     string `json:"periodo"`
-	Descripcion string `json:"descripcion"`
+	Value       string `json:"value"`       // [16 bytes]
+	Periodo     string `json:"periodo"`     // [16 bytes]
+	Descripcion string `json:"descripcion"` // [16 bytes]
 }
 type Viento struct {
-	Direccion string `json:"direccion"`
-	Velocidad int    `json:"velocidad"`
-	Periodo   string `json:"periodo"`
+	Direccion string `json:"direccion"` // [16 bytes]
+	Periodo   string `json:"periodo"`   // [16 bytes]
+	Velocidad int    `json:"velocidad"` // [8 bytes]
 }
 type RachaMax struct {
-	Value   string `json:"value"`
-	Periodo string `json:"periodo"`
+	Value   string `json:"value"`   // [16 bytes]
+	Periodo string `json:"periodo"` // [16 bytes]
 }
 type Dato struct {
-	Value int `json:"value"`
-	Hora  int `json:"hora"`
+	Value int `json:"value"` // [8 bytes]
+	Hora  int `json:"hora"`  // [8 bytes]
 }
 type Temperatura struct {
-	Maxima int    `json:"maxima"`
-	Minima int    `json:"minima"`
-	Dato   []Dato `json:"dato"`
+	Dato   []Dato `json:"dato"`   // [24 bytes]
+	Maxima int    `json:"maxima"` // [8 bytes]
+	Minima int    `json:"minima"` // [8 bytes]
 }
 type SensTermica struct {
-	Maxima int    `json:"maxima"`
-	Minima int    `json:"minima"`
-	Dato   []Dato `json:"dato"`
+	Dato   []Dato `json:"dato"`   // [24 bytes]
+	Maxima int    `json:"maxima"` // [8 bytes]
+	Minima int    `json:"minima"` // [8 bytes]
 }
 type HumedadRelativa struct {
-	Maxima int    `json:"maxima"`
-	Minima int    `json:"minima"`
-	Dato   []Dato `json:"dato"`
+	Dato   []Dato `json:"dato"`   // [24 bytes]
+	Maxima int    `json:"maxima"` // [8 bytes]
+	Minima int    `json:"minima"` // [8 bytes]
 }
 type Dia struct {
-	ProbPrecipitacion []ProbPrecipitacion `json:"probPrecipitacion"`
-	CotaNieveProv     []CotaNieveProv     `json:"cotaNieveProv"`
-	EstadoCielo       []EstadoCielo       `json:"estadoCielo"`
-	Viento            []Viento            `json:"viento"`
-	RachaMax          []RachaMax          `json:"rachaMax"`
-	Temperatura       Temperatura         `json:"temperatura"`
-	SensTermica       SensTermica         `json:"sensTermica"`
-	HumedadRelativa   HumedadRelativa     `json:"humedadRelativa"`
-	UvMax             int                 `json:"uvMax,omitempty"`
-	Fecha             string              `json:"fecha"`
+	Temperatura       Temperatura         `json:"temperatura"`       // [40 bytes]
+	SensTermica       SensTermica         `json:"sensTermica"`       // [40 bytes]
+	HumedadRelativa   HumedadRelativa     `json:"humedadRelativa"`   // [40 bytes]
+	ProbPrecipitacion []ProbPrecipitacion `json:"probPrecipitacion"` // [24 bytes]
+	CotaNieveProv     []CotaNieveProv     `json:"cotaNieveProv"`     // [24 bytes]
+	EstadoCielo       []EstadoCielo       `json:"estadoCielo"`       // [24 bytes]
+	Viento            []Viento            `json:"viento"`            // [24 bytes]
+	RachaMax          []RachaMax          `json:"rachaMax"`          // [24 bytes]
+	Fecha             string              `json:"fecha"`             // [16 bytes]
+	UvMax             int                 `json:"uvMax,omitempty"`   // [8 bytes]
 }
 type Prediccion struct {
-	Dia []Dia `json:"dia"`
+	Dia []Dia `json:"dia"` // [24 bytes]
 }
 type Diaria struct {
-	CodiIne          string    `json:"-"` // Nuevo campo para el código del municipio
-	ProbPrecipitacio int       `json:"probPrecipitacion"`
-	TemperaturaMax   int       `json:"maxima"`
-	TemperaturaMin   int       `json:"minima"`
-	HumitatRelativa  int       `json:"humedadRelativa"`
-	Time             time.Time `json:"-"`
+	Time             time.Time `json:"-"`                 // [24 bytes]
+	CodiIne          string    `json:"-"`                 // // [16 bytes] Nuevo campo para el código del municipio
+	ProbPrecipitacio int       `json:"probPrecipitacion"` // [8 bytes]
+	TemperaturaMax   int       `json:"maxima"`            // [8 bytes]
+	TemperaturaMin   int       `json:"minima"`            // [8 bytes]
+	HumitatRelativa  int       `json:"humedadRelativa"`   // [8 bytes]
 }
 
 // CodigoINE retorna el código INE oficial de 5 dígitos limpiando el prefijo "id" del campo ID
