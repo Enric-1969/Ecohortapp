@@ -1,7 +1,6 @@
 package main
 
 import (
-	"ecohortapp/repository"
 	"strconv"
 	"time"
 
@@ -63,7 +62,7 @@ func (app *Config) addRegistresDialog() dialog.Dialog {
 				humitat, _ := strconv.Atoi(humitatEntrada.Text)
 
 				if app.DB != nil {
-					_, err := app.DB.InsertRegistre(repository.Registres{
+					_, err := app.DB.InsertRegistre(Registres{
 						Data:         dataRegistre,
 						Precipitacio: precipitacio,
 						TempMaxima:   tempMaxima,

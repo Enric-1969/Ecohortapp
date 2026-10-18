@@ -1,12 +1,12 @@
 package main
 
 import (
-	"ecohortapp/repository"
 	"log"
 	"net/http"
 	"time"
 
 	"fyne.io/fyne/v2"
+
 	"fyne.io/fyne/v2/widget"
 )
 
@@ -16,25 +16,25 @@ import (
 
 // Crearem un struct amb totes les configuracions que necessiti la nostre App
 type Config struct {
-	UserConfig                         UserConfig            // [64 bytes] Mapeo de la estructura de configuración interna del usuario
-	HTTPClient                         http.Client           // [32 bytes] Afegim la referència al client http sence necessitat de invocar la llibreria
-	Registres                          [][]interface{}       // [24 bytes] Per emmagatzemar el slice of slices en forma de interfície a on esta contingut les dades obtingudes de la bd
-	Municipis                          []Municipio           // [24 bytes] Slice que contiene la lista estructurada de municipios
-	App                                fyne.App              // [16 bytes] Definim que emprara Fyne per construir la GUI de l'App
-	DB                                 repository.Repository // [16 bytes] Definim la referencia a la conexió a SQLite
-	MainWindow                         fyne.Window           // [16 bytes] Aqui enmagatzemem la referencia a certes arees de la ui per controlar les actualitzacions de les mateixes.
-	municipi                           string                // [16 bytes] Afegim la referencia a aquest valor de configuració
-	apiKey                             string                // [16 bytes] Afegim la referencia a aquest valor de configuració
-	InfoLog                            *log.Logger           // [8 bytes] Definim un Log d'accions
-	ErrorLog                           *log.Logger           // [8 bytes] Definim un Log d'errors
-	ClimaDadesContainer                *fyne.Container       // [8 bytes] Guardem el contenidor de les dades del clima, referenciant el punter de memòria del contenidor de fyne.
-	PronosticGraficContainer           *fyne.Container       // [8 bytes] Definim un camp a on enmagatzem el contenidor del gràfic de clima, que ara sera de tipus contenidor fyne
-	RegistresTable                     *widget.Table         // [8 bytes] Per emmagatzemar la referencia al punter que correspon el widget de la Taula.
-	AfegirRegistresDataRegistreEntrada *widget.Entry         // [8 bytes] Afegim la referencia a la entrada del valor data registre per a nous registres que guardem en la bd
-	AfegirRegistresPrecipitacioEntrada *widget.Entry         // [8 bytes] Afegim la referencia a la entrada del valor precipitacio per a nous registres que guardem en la bd
-	AfegirRegistresTempMaximaEntrada   *widget.Entry         // [8 bytes] Afegim la referencia a la entrada del valor tempMaxima per a nous registres que guardem en la bd
-	AfegirRegistresTempMinimaEntrada   *widget.Entry         // [8 bytes] Afegim la referencia a la entrada del valor tempMinima per a nous registres que guardem en la bd
-	AfegirRegistresHumitatEntrada      *widget.Entry         // [8 bytes] Afegim la referencia a la entrada del valor humitat per a nous registres que guardem en la bd
+	UserConfig                         UserConfig      // [64 bytes] Mapeo de la estructura de configuración interna del usuario
+	HTTPClient                         http.Client     // [32 bytes] Afegim la referència al client http sence necessitat de invocar la llibreria
+	Registres                          [][]interface{} // [24 bytes] Per emmagatzemar el slice of slices en forma de interfície a on esta contingut les dades obtingudes de la bd
+	Municipis                          []Municipio     // [24 bytes] Slice que contiene la lista estructurada de municipios
+	App                                fyne.App        // [16 bytes] Definim que emprara Fyne per construir la GUI de l'App
+	DB                                 Repository      // [16 bytes] Definim la referencia a la conexió a SQLite
+	MainWindow                         fyne.Window     // [16 bytes] Aqui enmagatzemem la referencia a certes arees de la ui per controlar les actualitzacions de les mateixes.
+	municipi                           string          // [16 bytes] Afegim la referencia a aquest valor de configuració
+	apiKey                             string          // [16 bytes] Afegim la referencia a aquest valor de configuració
+	InfoLog                            *log.Logger     // [8 bytes] Definim un Log d'accions
+	ErrorLog                           *log.Logger     // [8 bytes] Definim un Log d'errors
+	ClimaDadesContainer                *fyne.Container // [8 bytes] Guardem el contenidor de les dades del clima, referenciant el punter de memòria del contenidor de fyne.
+	PronosticGraficContainer           *fyne.Container // [8 bytes] Definim un camp a on enmagatzem el contenidor del gràfic de clima, que ara sera de tipus contenidor fyne
+	RegistresTable                     *widget.Table   // [8 bytes] Per emmagatzemar la referencia al punter que correspon el widget de la Taula.
+	AfegirRegistresDataRegistreEntrada *widget.Entry   // [8 bytes] Afegim la referencia a la entrada del valor data registre per a nous registres que guardem en la bd
+	AfegirRegistresPrecipitacioEntrada *widget.Entry   // [8 bytes] Afegim la referencia a la entrada del valor precipitacio per a nous registres que guardem en la bd
+	AfegirRegistresTempMaximaEntrada   *widget.Entry   // [8 bytes] Afegim la referencia a la entrada del valor tempMaxima per a nous registres que guardem en la bd
+	AfegirRegistresTempMinimaEntrada   *widget.Entry   // [8 bytes] Afegim la referencia a la entrada del valor tempMinima per a nous registres que guardem en la bd
+	AfegirRegistresHumitatEntrada      *widget.Entry   // [8 bytes] Afegim la referencia a la entrada del valor humitat per a nous registres que guardem en la bd
 
 	// CLEAN CODE: Estado centralizado de municipios cargados en RAM.
 	// Evita el uso de variables globales sueltas y permite compartir la lista
