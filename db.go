@@ -2,7 +2,7 @@ package main
 
 import (
 	"database/sql"
-	"ecohortapp/repository"
+
 	"log"
 	"os"
 
@@ -30,7 +30,7 @@ func (app *Config) connectSQL() (*sql.DB, error) {
 
 // setupDB inicialitza el repositori i executa les migracions
 func (app *Config) setupDB(sqlDB *sql.DB) {
-	app.DB = repository.NewSQLiteRepository(sqlDB)
+	app.DB = NewSQLiteRepository(sqlDB)
 
 	err := app.DB.Migrate()
 	if err != nil {
