@@ -9,7 +9,7 @@ import (
 
 	"ecohortapp/internal/domain"
 
-	_ "://github.com"
+	_ "modernc.org/sqlite"
 )
 
 type SQLiteRepository struct {

@@ -85,7 +85,9 @@ func ObtenirMunicipiosAEMET(app *domain.Config) ([]domain.Municipio, error) {
 		return nil, fmt.Errorf("la API Key d'AEMET està buida. Configureu-la a la pestanya Mode PRO")
 	}
 
-	urlMaestro := "https://aemet.es" + keyToUse
+	baseMaestro := "https:/" + "/opendata.aemet.es/opendata/api/maestro/municipios?api_key="
+	urlMaestro := baseMaestro + keyToUse
+
 	log.Println("[AEMET LOG] Paso 1 - Consultant endpoint mestre:", urlMaestro)
 
 	resp, err := app.HTTPClient.Get(urlMaestro)
