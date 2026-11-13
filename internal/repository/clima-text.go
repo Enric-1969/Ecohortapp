@@ -64,7 +64,8 @@ func GetClimaText(app *domain.Config) (*canvas.Text, *canvas.Text, *canvas.Text,
 
 func GetPreUrl(codiMunicipi string) (string, error) {
 	apiKeyEnv := os.Getenv("AEMET_API_KEY")
-	url := fmt.Sprintf("https://aemet.es", codiMunicipi, apiKeyEnv)
+	base := "https:/" + "/opendata.aemet.es/opendata/api/prediccion/especifica/municipio/diaria/%s/?api_key=%s"
+	url := fmt.Sprintf(base, codiMunicipi, apiKeyEnv)
 
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {

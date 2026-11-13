@@ -51,8 +51,9 @@ func ObtenirGrafic(app *domain.Config) *canvas.Image {
 	}
 	nomMunicipi = strings.TrimSpace(nomMunicipi)
 
+	baseMeteo := "https:/" + "/://meteoblue.com"
 	apiURL := fmt.Sprintf(
-		"https://meteoblue.com",
+		baseMeteo,
 		lat,
 		lon,
 		apiKey,

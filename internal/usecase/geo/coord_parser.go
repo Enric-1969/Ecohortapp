@@ -17,18 +17,21 @@ func ParseAEMETCoord(coordStr string) float64 {
 	upper := strings.ToUpper(raw)
 	isNegative := isSouthernOrWestern(upper)
 
+	// 1. Formato DMS con símbolos (ej. 41° 23' 15" N)
 	if val, ok := tryParseDMS(upper, isNegative); ok {
 		fmt.Printf("📍 Coordenada DMS convertida: '%s' -> %f\n", coordStr, val)
 		return val
 	}
 
-	if val, ok := tryParseDecimalOrUTM(upper, isNegative); ok {
-		fmt.Printf("📍 Coordenada Decimal/UTM convertida: '%s' -> %f\n", coordStr, val)
+	// 2. Formato Compacto AEMET DDMMSS + Hemisferio (ej. 034213W) -> Debe ir antes de UTM
+	if val, ok := tryParseCompactDMS(upper, isNegative); ok {
+		fmt.Printf("📍 Coordenada DDMMSS convertida: '%s' -> %f\n", coordStr, val)
 		return val
 	}
 
-	if val, ok := tryParseCompactDMS(upper, isNegative); ok {
-		fmt.Printf("📍 Coordenada DDMMSS convertida: '%s' -> %f\n", coordStr, val)
+	// 3. Formato Decimal directo o Métrico UTM
+	if val, ok := tryParseDecimalOrUTM(upper, isNegative); ok {
+		fmt.Printf("📍 Coordenada Decimal/UTM convertida: '%s' -> %f\n", coordStr, val)
 		return val
 	}
 
@@ -64,6 +67,47 @@ func tryParseDMS(upper string, isNegative bool) (float64, bool) {
 	}
 
 	val := math.Abs(deg) + (min / 60.0) + (sec / 3600.0)
+	if isNegative {
+		val = -val
+	}
+
+	if val >= -180.0 && val <= 180.0 {
+		return val, true
+	}
+	return 0, false
+}
+
+func tryParseCompactDMS(upper string, isNegative bool) (float64, bool) {
+	// El formato compacto AEMET siempre termina en letra de hemisferio (N, S, E, W, O) y no lleva decimales
+	if strings.ContainsAny(upper, ".,") {
+		return 0, false
+	}
+	lastChar := upper[len(upper)-1]
+	if lastChar != 'N' && lastChar != 'S' && lastChar != 'E' && lastChar != 'W' && lastChar != 'O' {
+		return 0, false
+	}
+
+	var digits strings.Builder
+	for _, ch := range upper {
+		if ch >= '0' && ch <= '9' {
+			digits.WriteRune(ch)
+		}
+	}
+	cleanDigits := digits.String()
+
+	if len(cleanDigits) < 5 || len(cleanDigits) > 7 {
+		return 0, false
+	}
+
+	secStr := cleanDigits[len(cleanDigits)-2:]
+	minStr := cleanDigits[len(cleanDigits)-4 : len(cleanDigits)-2]
+	degStr := cleanDigits[:len(cleanDigits)-4]
+
+	deg, _ := strconv.ParseFloat(degStr, 64)
+	min, _ := strconv.ParseFloat(minStr, 64)
+	sec, _ := strconv.ParseFloat(secStr, 64)
+
+	val := deg + (min / 60.0) + (sec / 3600.0)
 	if isNegative {
 		val = -val
 	}
@@ -111,37 +155,5 @@ func tryParseDecimalOrUTM(upper string, isNegative bool) (float64, bool) {
 		return converted, true
 	}
 
-	return 0, false
-}
-
-func tryParseCompactDMS(upper string, isNegative bool) (float64, bool) {
-	var digits strings.Builder
-	for _, ch := range upper {
-		if ch >= '0' && ch <= '9' {
-			digits.WriteRune(ch)
-		}
-	}
-	cleanDigits := digits.String()
-
-	if len(cleanDigits) < 5 || len(cleanDigits) > 7 {
-		return 0, false
-	}
-
-	secStr := cleanDigits[len(cleanDigits)-2:]
-	minStr := cleanDigits[len(cleanDigits)-4 : len(cleanDigits)-2]
-	degStr := cleanDigits[:len(cleanDigits)-4]
-
-	deg, _ := strconv.ParseFloat(degStr, 64)
-	min, _ := strconv.ParseFloat(minStr, 64)
-	sec, _ := strconv.ParseFloat(secStr, 64)
-
-	val := deg + (min / 60.0) + (sec / 3600.0)
-	if isNegative {
-		val = -val
-	}
-
-	if val >= -180.0 && val <= 180.0 {
-		return val, true
-	}
 	return 0, false
 }

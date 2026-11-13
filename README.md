@@ -137,15 +137,9 @@ El código ha sido refactorizado y desacoplado en carpetas con responsabilidades
 8. internal/repository/clima-text.go (ObtenirAlertaActual): Realiza la doble petición al endpoint CAP de avisos de AEMET.
 9. internal/ui/banners.go (CrearBannerAlerta): Intercepta los strings resultantes (rojo, naranja, amarillo) y dibuja una tarjeta de canvas coloreada con márgenes proporcionales sobre el climagrama de Meteoblue.
 
-🛠️ Requisitos e Instalación
-
-1. Tener instalado Go (versión 1.23.7 o superior).
-2. Clona o descarga este repositorio en tu equipo.
-3. Configura la clave de API de AEMET (mediante .env o en la interfaz gráfica).
-
 ## 🛠️ Requisitos e Instalación
 
-1. **Tener instalado Go** (versión 1.27.3 o superior para mitigación de fallos de seguridad críticos).
+1. **Tener instalado Go** (versión 1.27.4 o superior para mitigación de fallos de seguridad críticos).
 2. Clona o descarga este repositorio en tu equipo.
 3. Configura la clave de API de AEMET (mediante `.env` o en la interfaz gráfica).
 
