@@ -4,7 +4,7 @@ go 1.27.3
 
 require (
 	fyne.io/fyne/v2 v2.3.0
-	golang.org/x/text v0.3.7
+	golang.org/x/text v0.37.0
 )
 
 require (
@@ -20,6 +20,6 @@ require (
 	github.com/yuin/goldmark v1.4.0 // indirect
 	golang.org/x/image v0.0.0-20220601225756-64ec528b34cd // indirect
 	golang.org/x/mobile v0.0.0-20211207041440-4e6c2922fdee // indirect
-	golang.org/x/net v0.0.0-20211118161319-6a13c67c3ce4 // indirect
+	golang.org/x/net v0.55.0 // indirect
 	golang.org/x/sys v0.46.0 // indirect
 )
