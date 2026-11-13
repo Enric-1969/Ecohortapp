@@ -34,11 +34,14 @@ func main() {
 
 	// 3. Crear archivo de logs en disco i configuració de loggers des de la infraestructura
 	logFile, infoLog, errorLog := repository.InicialitzarLoggers()
+	if logFile != nil {
+		defer logFile.Close()
+	}
 	myApp.InfoLog = infoLog
 	myApp.ErrorLog = errorLog
 
 	// 4. Connexió i inicialització de la base de dades local mitjançant infraestructura
-	sqlDB, err := repository.ConnectSQL(fyneApp.Storage().RootURI().Path())
+	sqlDB, err := repository.ConnectSQL(&myApp)
 	if err != nil {
 		myApp.ErrorLog.Panic(err)
 	}
