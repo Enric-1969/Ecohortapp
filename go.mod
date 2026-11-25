@@ -3,7 +3,7 @@ module ecohortapp
 go 1.27.4
 
 require (
-	fyne.io/fyne/v2 v2.8.2
+	fyne.io/fyne/v2 v2.8.3
 	golang.org/x/text v0.44.0
 	modernc.org/sqlite v1.62.0
 )
